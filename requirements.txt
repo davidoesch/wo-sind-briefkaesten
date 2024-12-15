@@ -4,6 +4,5 @@ geopandas
 shapely
 numpy
 pandas
-openpyxl
 folium
 streamlit-folium

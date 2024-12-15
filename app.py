@@ -1,3 +1,25 @@
+"""
+Breifkästen  Query Tool
+
+Diese Streamlit-Anwendung ermöglicht die Berechnung der Gesamtanzahl von Wohnungen innerhalb eines benutzerdefinierten Polygons auf einer Karte.
+Benutzer können Polygone zeichnen, die durch Unterteilung in kleinere Polygone verarbeitet werden, um API-Limits von 200 Adressen einzuhalten.
+
+Hauptmerkmale:
+- Integration der GeoAdmin API für Datenabfragen.
+- Verwendung von Folium zur interaktiven Kartenanzeige.
+- Ergebnisanzeige der berechneten Wohnungsdaten.
+
+Benötigte Bibliotheken:
+- streamlit
+- requests
+- geopandas
+- shapely
+- numpy
+- pandas
+- folium
+- streamlit_folium
+"""
+
 import streamlit as st
 import requests
 import geopandas as gpd
@@ -16,7 +38,17 @@ from streamlit_folium import st_folium
 
 
 def split_polygon(polygon, max_area, export_gpkg=False, gpkg_path="grid_output.gpkg"):
-    """Teilt ein Polygon in kleinere Polygone auf, deren Fläche max_area nicht überschreitet. Optionaler Export als GeoPackage."""
+    """Teilt ein Polygon in kleinere Polygone, deren Fläche eine vorgegebene Maximalgröße nicht überschreitet.
+
+    Args:
+        polygon (shapely.geometry.Polygon): Das zu teilende Polygon.
+        max_area (float): Maximale Fläche eines Teilpolygons.
+        export_gpkg (bool, optional): Gibt an, ob die Teilpolygone als GeoPackage exportiert werden sollen. Standard: False.
+        gpkg_path (str, optional): Pfad zur Ausgabe des GeoPackages. Standard: "grid_output.gpkg".
+
+    Returns:
+        list: Liste der generierten Teilpolygone.
+    """
     bounds = polygon.bounds  # (minx, miny, maxx, maxy)
     width = bounds[2] - bounds[0]
     height = bounds[3] - bounds[1]
@@ -50,7 +82,15 @@ def split_polygon(polygon, max_area, export_gpkg=False, gpkg_path="grid_output.g
     return sub_polygons
 
 def query_geoadmin_with_polygon(polygon, sr=4326):
-    """Sendet eine Anfrage an die GeoAdmin API mit einem Polygon."""
+    """Sendet eine Anfrage an die GeoAdmin API mit einem gegebenen Polygon.
+
+    Args:
+        polygon (shapely.geometry.Polygon): Das Polygon für die Anfrage.
+        sr (int, optional): Raumbezugssystem (Spatial Reference). Standard: 4326 (WGS84).
+
+    Returns:
+        dict: Das Antwort-JSON der API.
+    """
     endpoint = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
 
     polygon_coords = [[x, y] for x, y in polygon.exterior.coords]
@@ -94,7 +134,14 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
 
 
 def extract_wohnungen_and_counts(result):
-    """Extrahiert die Gesamtanzahl der Wohnungen, die Anzahl pro Straßennamen und die Anzahl der Features."""
+    """Extrahiert die Gesamtanzahl von Wohnungen und weitere Informationen aus einer API-Antwort.
+
+    Args:
+        result (dict): JSON-Antwort der API.
+
+    Returns:
+        tuple: Enthält die Gesamtanzahl der Wohnungen, die Anzahl nach Straßen und die Anzahl nach Straßennummern.
+    """
     global total_adressen
     total_wohnungen = 0
     wohnungen_by_streetnr = defaultdict(int)
@@ -128,6 +175,15 @@ def extract_wohnungen_and_counts(result):
     return total_wohnungen, wohnungen_by_streetnr,wohnungen_by_street
 
 def create_map(center, zoom):
+    """Erstellt eine interaktive Karte mit Zeichentools.
+
+    Args:
+        center (list): Mittelpunkt der Karte [Breitengrad, Längengrad].
+        zoom (int): Zoomstufe der Karte.
+
+    Returns:
+        folium.Map: Eine Folium-Karte mit Zeichentools.
+    """
     m = folium.Map(location=center,
         zoom_start=zoom,
         control_scale=True,
@@ -224,3 +280,11 @@ else:
 
 st.write("")
 st.write("")
+
+st.markdown("""
+    <div style="text-align: center; color: grey;">
+    🏠 **Wohnungs-Briefkasten-Analyse** |
+    © 2024 David Oesch |
+    [GitHub Repository](https://github.com/davidoesch/wo-sind-briefkaesten)
+    </div>
+    """, unsafe_allow_html=True)
