@@ -166,4 +166,4 @@ cython_debug/
 secrets/
 results/
 rclone/
-main_functions/Anzahl_Wohnungen_bei_Ladestationen.ipynb
+grid_output.*
