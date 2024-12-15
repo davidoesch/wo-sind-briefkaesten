@@ -1,6 +1,7 @@
-# Wie viele Breifkästen gibt es 
+# Wie viele Briefkästen gibt es?
 
-Eine interaktive Web-Anwendung zur Analyse der Gesamtanzahl von Wohnungen und darausfolgend Briefkästen in einem benutzerdefinierten Gebiet. Dieses Tool eignet sich ideal für Zielgruppenanalysen, z. B. zur Planung von Marketingmaßnahmen wie Flyer-Verteilung in Quartieren.
+Eine interaktive Web-Anwendung zur Analyse der Gesamtanzahl von Wohnungen und darausfolgend Briefkästen in einem benutzerdefinierten Gebiet in der Schweiz. Dieses Tool eignet sich ideal für Zielgruppenanalysen, z. B. zur Planung von Marketingmassnahmen wie Flyer-Verteilung in Quartieren.
+Grundannahme: jede Wohnung verfügt auch über einen Briefkasten..
 
 -> website der Anwednung: [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
