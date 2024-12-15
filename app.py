@@ -281,10 +281,11 @@ else:
 st.write("")
 st.write("")
 
-st.markdown("""
-    <div style="text-align: center; color: grey;">
-    🏠 **Wohnungs-Briefkasten-Analyse** |
-    © 2024 David Oesch |
-    [GitHub Repository](https://github.com/davidoesch/wo-sind-briefkaesten)
-    </div>
-    """, unsafe_allow_html=True)
+
+st.markdown("---")
+st.write(
+    "🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch |"
+)
+st.markdown(
+    "More infos and :star: at [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
+)
