@@ -3,7 +3,7 @@
 Eine interaktive Web-Anwendung zur Analyse der Gesamtanzahl von Wohnungen und darausfolgend Briefkästen in einem benutzerdefinierten Gebiet in der Schweiz. Dieses Tool eignet sich ideal für Zielgruppenanalysen, z. B. zur Planung von Marketingmassnahmen wie Flyer-Verteilung in Quartieren.
 Grundannahme: jede Wohnung verfügt auch über einen Briefkasten..
 
--> website der Anwednung: [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
+-> website der Anwendung: [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
 ## Hauptmerkmale
 - **Polygon-Zeichenfunktion:** Benutzer können Polygone auf einer interaktiven Karte zeichnen oder aus einem map.geo.admin.ch link generieren
