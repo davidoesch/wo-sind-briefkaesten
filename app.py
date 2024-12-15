@@ -1,3 +1,4 @@
+import streamlit as st
 import requests
 import geopandas as gpd
 import xml.etree.ElementTree as ET
@@ -6,7 +7,6 @@ from shapely.ops import split
 from collections import defaultdict
 import json
 import numpy as np
-from swiftshadow import QuickProxy
 
 
 def resolve_kml_url(shortened_url):
@@ -161,62 +161,54 @@ def extract_wohnungen_and_counts(result):
     return total_wohnungen, wohnungen_by_streetnr,wohnungen_by_street
 
 # Hauptprogramm
-if __name__ == "__main__":
-    # Beispiel-KML-Link (ersetzen Sie diesen durch Ihren eigenen Link)
-    #kml_url = "https://s.geo.admin.ch/3lwgn09kgqha" #Schliern
-    #kml_url = "https://s.geo.admin.ch/p56ijeogsuta" #SChliern gross
-    #kml_url = "https://s.geo.admin.ch/jpve0fg64vai" #köniz
-    #kml_url = "https://s.geo.admin.ch/nct5odun6mkp"
-    kml_url = input("Bitte Link zur Zeichnung eingeben: ")
-    print(f"Link zur Zeichnung ist: {kml_url}")
+# Streamlit app
+st.title("KML Polygon Analyzer")
 
-    polygon = load_kml_polygon_directly(kml_url)
+kml_url = st.text_input("Enter the KML URL:")
 
-    max_area = 0.000005  # 130m x 130m
-    sub_polygons = split_polygon(polygon, max_area,export_gpkg=True)
+if st.button("Analyze"):
+    if kml_url:
+        try:
+            polygon = load_kml_polygon_directly(kml_url)
+            max_area = 0.000005  # 130m x 130m
+            sub_polygons = split_polygon(polygon, max_area)
 
-    total_adressen = 0
-    total_wohnungen = 0
-    aggregated_wohnungen_by_streetnr = defaultdict(int)
-    aggregated_wohnungen_by_street = defaultdict(int)
+            total_adressen = 0
+            total_wohnungen = 0
+            aggregated_wohnungen_by_streetnr = defaultdict(int)
+            aggregated_wohnungen_by_street = defaultdict(int)
 
-    for i, sub_polygon in enumerate(sub_polygons):
-        print(f"Verarbeite Subpolygon {i + 1} von {len(sub_polygons)}...")
-        result = query_geoadmin_with_polygon(sub_polygon)
+            progress_bar = st.progress(0)
 
-        if result:
-            sub_total_wohnungen, sub_wohnungen_by_streetnr,sub_wohnungen_by_street= extract_wohnungen_and_counts(result)
-            total_wohnungen += sub_total_wohnungen
+            for i, sub_polygon in enumerate(sub_polygons):
+                st.write(f"Processing subpolygon {i + 1} of {len(sub_polygons)}...")
+                result = query_geoadmin_with_polygon(sub_polygon)
+                if result:
+                    sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
+                    total_wohnungen += sub_total_wohnungen
+                    for street, count in sub_wohnungen_by_streetnr.items():
+                        aggregated_wohnungen_by_streetnr[street] += count
+                    for street, count in sub_wohnungen_by_street.items():
+                        aggregated_wohnungen_by_street[street] += count
+                progress_bar.progress((i + 1) / len(sub_polygons))
 
-            for street, count in sub_wohnungen_by_streetnr.items():
-                aggregated_wohnungen_by_streetnr[street] += count
+            st.subheader("Wohnungen nach Adressen")
+            for strnamenr, count in sorted(aggregated_wohnungen_by_streetnr.items()):
+                st.write(f"{strnamenr}: {count}")
 
-            for street, count in sub_wohnungen_by_street.items():
-                aggregated_wohnungen_by_street[street] += count
+            st.subheader("Wohnungen nach Strassen")
+            total_wohnungen_pro_strasse = defaultdict(int)
+            for strname, count in aggregated_wohnungen_by_street.items():
+                total_wohnungen_pro_strasse[strname] += count
 
-    print("-------------------------------------------------------")
-    print("Wohnungen nach Adressen")
-    print("-------------------------------------------------------")
-    for strnamenr, count in sorted(aggregated_wohnungen_by_streetnr.items()):
-        print(f"  {strnamenr}: {count}")
+            for strname, total_count in sorted(total_wohnungen_pro_strasse.items()):
+                st.write(f"{strname}: {total_count}")
 
-    # Berechnung der Summe der Wohnungen pro Straße
-    print("-------------------------------------------------------")
-    print("Wohnungen nach Strassen:")
-    print("-------------------------------------------------------")
-    total_wohnungen_pro_strasse = defaultdict(int)
+            st.subheader("Summary")
+            st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
+            st.write(f"Gesamtanzahl Wohnungen im Polygon: {total_wohnungen}")
 
-    for strname, count in aggregated_wohnungen_by_street.items():
-        total_wohnungen_pro_strasse[strname] += count
-
-    # Ausgabe der Summe der Wohnungen pro Straße
-    for strname, total_count in sorted(total_wohnungen_pro_strasse.items()):
-        print(f"  {strname}: {total_count}")
-
-    print("-------------------------------------------------------")
-    print(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
-    print("-------------------------------------------------------")
-
-    print("-------------------------------------------------------")
-    print(f"Gesamtanzahl Wohnungen im Polygon: {total_wohnungen}")
-    print("-------------------------------------------------------")
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+    else:
+        st.warning("Please enter a KML URL.")
