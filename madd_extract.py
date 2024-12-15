@@ -54,11 +54,11 @@ def load_kml_polygon_directly(kml_url):
     return polygon
 
 # Beispiel-KML-Link (ersetzen Sie diesen durch Ihren eigenen Link)
-#kml_url = "https://s.geo.admin.ch/3lwgn09kgqha" #Schliern
+kml_url = "https://s.geo.admin.ch/3lwgn09kgqha" #Schliern
 # kml_url = "https://s.geo.admin.ch/p56ijeogsuta" #SChliern gross
 #kml_url = "https://s.geo.admin.ch/jpve0fg64vai" #köniz
 #kml_url = "https://s.geo.admin.ch/nct5odun6mkp"
-kml_url = input("Bitte Link zur Zeichnung eingeben: ")
+#kml_url = input("Bitte Link zur Zeichnung eingeben: ")
 print(f"Link zur Zeichnung ist: {kml_url}")
 
 
@@ -87,11 +87,17 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
         "returnGeometry": False
     }
 
-    response = requests.get(endpoint, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        response.raise_for_status()
+    try:
+        response = requests.get(endpoint, params=params,timeout=15)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to connect to api.geo.admin.ch: {e}")
+        return
+
+
 
 # Anfrage an die GeoAdmin API mit Polygon
 try:
