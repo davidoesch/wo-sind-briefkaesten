@@ -204,11 +204,12 @@ if st.button("Berechne"):
             for strname, total_count in sorted(total_wohnungen_pro_strasse.items()):
                 st.write(f"{strname}: {total_count}")
 
-            st.subheader("Summary")
+            st.subheader("Adressen")
             st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
-            st.write(f"Gesamtanzahl Wohnungen im Polygon: {total_wohnungen}")
+            st.subheader("Briefkästen")
+            st.write(f"Gesamtanzahl Wohnungen (=Briefkästen) im Polygon: {total_wohnungen}")
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
     else:
-        st.warning("Please enter a KML URL.")
+        st.warning("Please enter a map.geo.admin.ch URL.")
