@@ -69,7 +69,7 @@ Das Projekt besteht aus zwei Hauptdateien:
    ```
 3. Starten Sie die Streamlit-Anwendung:
    ```bash
-   streamlit run streamlit_briefkaesten.py
+   streamlit run app.py
    ```
 
 ### Interaktive Nutzung
