@@ -168,7 +168,7 @@ if __name__ == "__main__":
     #kml_url = "https://s.geo.admin.ch/jpve0fg64vai" #köniz
     #kml_url = "https://s.geo.admin.ch/nct5odun6mkp"
     kml_url = input("Bitte Link zur Zeichnung eingeben: ")
-    print(f"Link zur Zeichnung ist: {kml_url}")
+    # print(f"Link zur Zeichnung ist: {kml_url}")
 
     polygon = load_kml_polygon_directly(kml_url)
 

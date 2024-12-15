@@ -111,7 +111,7 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
         }
 
-        prox=QuickProxy()
+        #prox=QuickProxy()
         #print(prox)
         #response = requests.get(endpoint, params=params, headers=headers,proxies = {prox[0]:prox[1]}, timeout=15)
         response = requests.get(endpoint, params=params, timeout=15)
@@ -162,11 +162,11 @@ def extract_wohnungen_and_counts(result):
 
 # Hauptprogramm
 # Streamlit app
-st.title("KML Polygon Analyzer")
+st.title("Wieviele Briefkästen gibt es ?")
 
-kml_url = st.text_input("Enter the KML URL:")
+kml_url = st.text_input("Füge die map.geo.admin.ch link zur Zeichnung ein:")
 
-if st.button("Analyze"):
+if st.button("Berechne"):
     if kml_url:
         try:
             polygon = load_kml_polygon_directly(kml_url)
@@ -181,7 +181,7 @@ if st.button("Analyze"):
             progress_bar = st.progress(0)
 
             for i, sub_polygon in enumerate(sub_polygons):
-                st.write(f"Processing subpolygon {i + 1} of {len(sub_polygons)}...")
+                st.write(f"Prozessieren Subset {i + 1} von {len(sub_polygons)}...")
                 result = query_geoadmin_with_polygon(sub_polygon)
                 if result:
                     sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
