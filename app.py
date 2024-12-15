@@ -7,6 +7,9 @@ from shapely.ops import split
 from collections import defaultdict
 import json
 import numpy as np
+import pandas as pd
+
+
 
 
 def resolve_kml_url(shortened_url):
@@ -160,8 +163,11 @@ def extract_wohnungen_and_counts(result):
 
     return total_wohnungen, wohnungen_by_streetnr,wohnungen_by_street
 
+
 # Hauptprogramm
 # Streamlit app
+
+
 st.title("Wieviele Briefkästen gibt es ?")
 
 kml_url = st.text_input("Füge die map.geo.admin.ch link zur Zeichnung ein:")
@@ -179,9 +185,11 @@ if st.button("Berechne"):
             aggregated_wohnungen_by_street = defaultdict(int)
 
             progress_bar = st.progress(0)
+            progress_text = st.empty()  # Platzhalter für Fortschrittsanzeige
 
+            # Iteriere über Subsets mit Countdown
             for i, sub_polygon in enumerate(sub_polygons):
-                st.write(f"Prozessieren Subset {i + 1} von {len(sub_polygons)}...")
+                progress_text.text(f"Verbleibende Subsets: {len(sub_polygons) - i}")
                 result = query_geoadmin_with_polygon(sub_polygon)
                 if result:
                     sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
@@ -191,25 +199,29 @@ if st.button("Berechne"):
                     for street, count in sub_wohnungen_by_street.items():
                         aggregated_wohnungen_by_street[street] += count
                 progress_bar.progress((i + 1) / len(sub_polygons))
+            progress_text.text("Prozess abgeschlossen!")
 
-            st.subheader("Wohnungen nach Adressen")
-            for strnamenr, count in sorted(aggregated_wohnungen_by_streetnr.items()):
-                st.write(f"{strnamenr}: {count}")
+            # Briefkästen direkt anzeigen
+            st.subheader(f"Briefkästen: {total_wohnungen}")
+            st.write(f"Entspricht der Gesamtanzahl Wohnungen  im Polygon")
 
-            st.subheader("Wohnungen nach Strassen")
-            total_wohnungen_pro_strasse = defaultdict(int)
-            for strname, count in aggregated_wohnungen_by_street.items():
-                total_wohnungen_pro_strasse[strname] += count
+            # Details als Tabellen anzeigen
+            with st.expander("Details: Wohnungen nach Adressen"):
+                adressen_df = pd.DataFrame(
+                    [{"Adresse": adr, "Wohnungen": count} for adr, count in aggregated_wohnungen_by_streetnr.items()]
+                )
+                st.write(adressen_df)
 
-            for strname, total_count in sorted(total_wohnungen_pro_strasse.items()):
-                st.write(f"{strname}: {total_count}")
+            with st.expander("Details: Wohnungen nach Strassen"):
+                strassen_df = pd.DataFrame(
+                    [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
+                )
+                st.write(strassen_df)
 
-            st.subheader("Adressen")
-            st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
-            st.subheader("Briefkästen")
-            st.write(f"Gesamtanzahl Wohnungen (=Briefkästen) im Polygon: {total_wohnungen}")
+            with st.expander("Details: Adressen"):
+                st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
 
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            st.error(f"Ein Fehler ist aufgetreten: {str(e)}")
     else:
-        st.warning("Please enter a map.geo.admin.ch URL.")
+        st.warning("Bitte gib eine map.geo.admin.ch URL ein.")

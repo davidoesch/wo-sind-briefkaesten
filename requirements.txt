@@ -3,3 +3,5 @@ requests
 geopandas
 shapely
 numpy
+pandas
+openpyxl
