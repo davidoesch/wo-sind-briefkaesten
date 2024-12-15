@@ -8,48 +8,12 @@ from collections import defaultdict
 import json
 import numpy as np
 import pandas as pd
+import folium
+from folium.plugins import Draw
+from streamlit_folium import st_folium
 
 
 
-
-def resolve_kml_url(shortened_url):
-    """Löst eine gekürzte URL auf, extrahiert die KML-URL und entfernt '&featureInfo=default'."""
-    print(f"Aufruf shortened  public.geo.admin.ch ... ")
-    response = requests.head(shortened_url, allow_redirects=True, timeout=15)
-    print(f"... erhalten ")
-    if response.status_code != 200:
-        raise ValueError(f"Fehler beim Auflösen der URL: {response.status_code}")
-
-    if "https://public.geo.admin.ch/api/kml" in response.url:
-        start_index = response.url.find("https://public.geo.admin.ch/api/kml")
-        clean_url = response.url[start_index:]
-
-        if "&featureInfo=default" in clean_url:
-            clean_url = clean_url.split("&featureInfo=default")[0]
-
-        return clean_url
-
-    raise ValueError("Keine gültige Zeichnung gefunden.")
-
-def load_kml_polygon_directly(kml_url):
-    """Parst ein KML-Polygon direkt aus einer URL und gibt es als Shapely-Polygon zurück."""
-    resolved_url = resolve_kml_url(kml_url)
-    print(f"Aufruf public.geo.admin.ch ... ")
-    response = requests.get(resolved_url, timeout=15)
-    print(f"... erhalten ")
-    if response.status_code != 200:
-        raise ValueError(f"Fehler beim Laden der KML-Datei: {response.status_code}")
-
-    root = ET.fromstring(response.content)
-    namespace = {"kml": "http://www.opengis.net/kml/2.2"}
-
-    coordinates = root.find(".//kml:coordinates", namespace).text.strip()
-    coords = [
-        tuple(map(float, coord.split(",")[:2]))
-        for coord in coordinates.split()
-    ]
-
-    return Polygon(coords)
 
 def split_polygon(polygon, max_area, export_gpkg=False, gpkg_path="grid_output.gpkg"):
     """Teilt ein Polygon in kleinere Polygone auf, deren Fläche max_area nicht überschreitet. Optionaler Export als GeoPackage."""
@@ -163,6 +127,33 @@ def extract_wohnungen_and_counts(result):
 
     return total_wohnungen, wohnungen_by_streetnr,wohnungen_by_street
 
+def create_map(center, zoom):
+    m = folium.Map(location=center,
+        zoom_start=zoom,
+        control_scale=True,
+        tiles="https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
+        attr='Map data: &copy; <a href="https://www.swisstopo.ch">swisstopo</a>)',  # noqa: E501
+    )
+    Draw(
+        export=False,
+        position="topleft",
+        draw_options={
+            "polyline": False,
+            "rectangle": False,
+            "circle": False,
+            "marker": False,
+            "circlemarker": False,
+            "polygon": True,
+        },
+        edit_options={
+            "edit": False,
+            "remove": False
+        }
+    ).add_to(m)
+    return m
+
+
+
 
 # Hauptprogramm
 # Streamlit app
@@ -170,58 +161,66 @@ def extract_wohnungen_and_counts(result):
 
 st.title("Wieviele Briefkästen gibt es ?")
 
-kml_url = st.text_input("Füge die map.geo.admin.ch link zur Zeichnung ein:")
+m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
+output = st_folium(m, width=700, height=500)
 
-if st.button("Berechne"):
-    if kml_url:
-        try:
-            polygon = load_kml_polygon_directly(kml_url)
-            max_area = 0.000005  # 130m x 130m
-            sub_polygons = split_polygon(polygon, max_area)
+if st.button("Berechnen", key="calculate_button"):
+    if output["last_active_drawing"]:
+        drawn_polygon = output["last_active_drawing"]["geometry"]["coordinates"][0]
+        polygon = Polygon(drawn_polygon)
+        if polygon.area > 0.0001:  # 0.0001 entspricht ungefähr 10 km²
+            st.warning("Das gezeichnete Polygon ist grösser als 10 km². Die Berechnung kann sehr lange dauern und möglicherweise aufgrund von API-Limitierungen von geo.admin.ch abbrechen.")
 
-            total_adressen = 0
-            total_wohnungen = 0
-            aggregated_wohnungen_by_streetnr = defaultdict(int)
-            aggregated_wohnungen_by_street = defaultdict(int)
+        # Use the drawn polygon for calculations
+        max_area = 0.000005
+        sub_polygons = split_polygon(polygon, max_area)
 
-            progress_bar = st.progress(0)
-            progress_text = st.empty()  # Platzhalter für Fortschrittsanzeige
+        total_adressen = 0
+        total_wohnungen = 0
+        aggregated_wohnungen_by_streetnr = defaultdict(int)
+        aggregated_wohnungen_by_street = defaultdict(int)
 
-            # Iteriere über Subsets mit Countdown
-            for i, sub_polygon in enumerate(sub_polygons):
-                progress_text.text(f"Verbleibende Subsets: {len(sub_polygons) - i}")
-                result = query_geoadmin_with_polygon(sub_polygon)
-                if result:
-                    sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
-                    total_wohnungen += sub_total_wohnungen
-                    for street, count in sub_wohnungen_by_streetnr.items():
-                        aggregated_wohnungen_by_streetnr[street] += count
-                    for street, count in sub_wohnungen_by_street.items():
-                        aggregated_wohnungen_by_street[street] += count
-                progress_bar.progress((i + 1) / len(sub_polygons))
-            progress_text.text("Prozess abgeschlossen!")
+        progress_bar = st.progress(0)
+        progress_text = st.empty()  # Platzhalter für Fortschrittsanzeige
 
-            # Briefkästen direkt anzeigen
-            st.subheader(f"Briefkästen: {total_wohnungen}")
-            st.write(f"Entspricht der Gesamtanzahl Wohnungen  im Polygon")
+        # Iteriere über Subsets mit Countdown
+        for i, sub_polygon in enumerate(sub_polygons):
+            progress_text.text(f"Verbleibende Subsets: {len(sub_polygons) - i}")
+            result = query_geoadmin_with_polygon(sub_polygon)
+            if result:
+                sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
+                total_wohnungen += sub_total_wohnungen
+                for street, count in sub_wohnungen_by_streetnr.items():
+                    aggregated_wohnungen_by_streetnr[street] += count
+                for street, count in sub_wohnungen_by_street.items():
+                    aggregated_wohnungen_by_street[street] += count
+            progress_bar.progress((i + 1) / len(sub_polygons))
+        progress_text.text("Prozess abgeschlossen!")
 
-            # Details als Tabellen anzeigen
-            with st.expander("Details: Wohnungen nach Adressen"):
-                adressen_df = pd.DataFrame(
-                    [{"Adresse": adr, "Wohnungen": count} for adr, count in aggregated_wohnungen_by_streetnr.items()]
-                )
-                st.write(adressen_df)
+        # Briefkästen direkt anzeigen
+        st.subheader(f"Briefkästen: {total_wohnungen}")
+        st.write(f"Entspricht der Gesamtanzahl Wohnungen  im Polygon")
 
-            with st.expander("Details: Wohnungen nach Strassen"):
-                strassen_df = pd.DataFrame(
-                    [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
-                )
-                st.write(strassen_df)
+        # Details als Tabellen anzeigen
+        with st.expander("Details: Wohnungen nach Adressen"):
+            adressen_df = pd.DataFrame(
+                [{"Adresse": adr, "Wohnungen": count} for adr, count in aggregated_wohnungen_by_streetnr.items()]
+            )
+            adressen_df_sorted = adressen_df.sort_values("Adresse")
+            st.write(adressen_df_sorted)
 
-            with st.expander("Details: Adressen"):
-                st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
+        with st.expander("Details: Wohnungen nach Strassen"):
+            strassen_df = pd.DataFrame(
+                [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
+            )
+            strassen_df_sorted = strassen_df.sort_values("Strasse")
+            st.write(strassen_df_sorted)
 
-        except Exception as e:
-            st.error(f"Ein Fehler ist aufgetreten: {str(e)}")
-    else:
-        st.warning("Bitte gib eine map.geo.admin.ch URL ein.")
+
+        with st.expander("Details: Adressen"):
+            st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
+else:
+    st.warning("Bitte zeichnen Sie zuerst ein Polygon auf der Karte.")
+
+st.write("")
+st.write("")
