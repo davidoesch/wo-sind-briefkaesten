@@ -63,6 +63,7 @@ print(f"Link zur Zeichnung ist: {kml_url}")
 
 
 polygon = load_kml_polygon_directly(kml_url)
+breakpoint()
 
 # 2. Abfrage an die GeoAdmin API senden
 def query_geoadmin_with_polygon(polygon, sr=4326):
