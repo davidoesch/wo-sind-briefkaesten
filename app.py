@@ -214,7 +214,10 @@ def create_map(center, zoom):
 # Hauptprogramm
 # Streamlit app
 
-
+st.set_page_config(
+    page_title="Briefkasten",
+    page_icon="📮",
+)
 st.title("Wieviele Briefkästen gibt es ?")
 
 m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
