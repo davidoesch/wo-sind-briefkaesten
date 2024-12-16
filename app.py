@@ -224,7 +224,8 @@ if st.button("Berechnen", key="calculate_button"):
     if output["last_active_drawing"]:
         drawn_polygon = output["last_active_drawing"]["geometry"]["coordinates"][0]
         polygon = Polygon(drawn_polygon)
-        if polygon.area > 0.0001:  # 0.0001 entspricht ungefähr 10 km²
+        #st.write(f"polyarea: {polygon.area }")
+        if polygon.area > 0.001:  # 0.001 entspricht ungefähr 10 km²
             st.warning("Das gezeichnete Polygon ist grösser als 10 km². Die Berechnung kann sehr lange dauern und möglicherweise aufgrund von API-Limitierungen von geo.admin.ch abbrechen.")
 
         # Use the drawn polygon for calculations
