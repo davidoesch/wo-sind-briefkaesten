@@ -92,7 +92,7 @@ website: [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.
 [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
 ## Lizenz
-© 2024 David Oesch. Dieses Projekt ist unter der [MIT-Lizenz](https://github.com/davidoesch/Sentinel-2-Acquisition-Plan-Harvesting?tab=MIT-1-ov-file) lizenziert.
+© 2024 David Oesch. Dieses Projekt ist unter der [MIT-Lizenz](LICENSE.txt) lizenziert.
 
 ## Kontakt
 Haben Sie Fragen oder Verbesserungsvorschläge? [David Oesch auf GitHub](https://github.com/davidoesch).
