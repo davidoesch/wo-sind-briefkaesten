@@ -282,7 +282,7 @@ if st.button("Berechnen", key="calculate_button"):
 
         # Briefkästen direkt anzeigen
         st.subheader(f"Briefkästen: {total_wohnungen}")
-        st.markdown(f"Entspricht der Gesamtanzahl [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#grundannahme) im Polygon")
+        st.markdown(f"Entspricht der Gesamtanzahl Wohnungen [(Annahmen)](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#grundannahme) im Polygon")
 
         # Details als Tabellen anzeigen
         with st.expander("Details: Wohnungen nach Adressen"):
