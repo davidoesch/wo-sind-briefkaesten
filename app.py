@@ -134,14 +134,6 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
 
 
 def extract_wohnungen_and_counts(result):
-    """Extrahiert die Gesamtanzahl von Wohnungen und weitere Informationen aus einer API-Antwort.
-
-    Args:
-        result (dict): JSON-Antwort der API.
-
-    Returns:
-        tuple: Enthält die Gesamtanzahl der Wohnungen, die Anzahl nach Straßen und die Anzahl nach Straßennummern.
-    """
     global total_adressen
     total_wohnungen = 0
     wohnungen_by_streetnr = defaultdict(int)
@@ -150,29 +142,36 @@ def extract_wohnungen_and_counts(result):
 
     if result and 'results' in result:
         total_features = len(result['results'])
-        for feature in result['results']:
 
+        if total_features == 0:
+            print("Keine Adressen gefunden.")
+            return 0, {}, {}
+
+        for feature in result['results']:
             attributes = feature.get('attributes', {})
             ganzwhg = attributes.get('ganzwhg', 0) or 0
             strnamenr = attributes.get('strname_deinr', "Unbekannt")
             strname = ", ".join(attributes.get('strname', "Unbekannt"))
-
             total_wohnungen += ganzwhg
             wohnungen_by_streetnr[strnamenr] += ganzwhg
             wohnungen_by_street[strname] += ganzwhg
 
+        print(f"Anzahl der gefundenen Adressen: {total_features}")
+        total_adressen = total_adressen + total_features
 
-    print(f"Anzahl der gefundenen Adressen: {total_features}")
-    total_adressen = total_adressen + total_features
+        if total_features >= 200:
+            print("***************")
+            print("Warnung: Mehr als 200 Adressen. Bitte unterteilen Sie die Zeichnung in kleinere Abschnitte und führen Sie die Abfrage mehrfach aus.")
+            print("***************")
+            wohnungen_by_streetnr = defaultdict(int)
+            total_wohnungen = 0
 
-    if total_features >= 200:
-        print("***************")
-        print("Warnung: Mehr als 200 Adressen. Bitte unterteilen Sie die Zeichnung in kleinere Abschnitte und führen Sie die Abfrage mehrfach aus.")
-        print("***************")
-        wohnungen_by_streetnr = defaultdict(int)
-        total_wohnungen = 0
+    else:
+        print("Keine Ergebnisse gefunden.")
+        return 0, {}, {}
 
-    return total_wohnungen, wohnungen_by_streetnr,wohnungen_by_street
+    return total_wohnungen, wohnungen_by_streetnr, wohnungen_by_street
+
 
 def create_map(center, zoom):
     """Erstellt eine interaktive Karte mit Zeichentools.
@@ -266,15 +265,22 @@ if st.button("Berechnen", key="calculate_button"):
             adressen_df = pd.DataFrame(
                 [{"Adresse": adr, "Wohnungen": count} for adr, count in aggregated_wohnungen_by_streetnr.items()]
             )
-            adressen_df_sorted = adressen_df.sort_values("Adresse")
-            st.write(adressen_df_sorted)
+            if not adressen_df.empty:
+                adressen_df_sorted = adressen_df.sort_values("Adresse")
+                st.write(adressen_df_sorted)
+            else:
+                st.write("Keine Adressen gefunden.")
+
 
         with st.expander("Details: Wohnungen nach Strassen"):
             strassen_df = pd.DataFrame(
                 [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
             )
-            strassen_df_sorted = strassen_df.sort_values("Strasse")
-            st.write(strassen_df_sorted)
+            if not strassen_df.empty:
+                strassen_df_sorted = strassen_df.sort_values("Strasse")
+                st.write(strassen_df_sorted)
+            else:
+                st.write("Keine Strassen gefunden.")
 
 
         with st.expander("Details: Adressen"):
