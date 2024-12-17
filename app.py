@@ -221,20 +221,6 @@ def create_map(center, zoom):
     return m
 
 
-# Function to get the latest release number and date from the GitHub repo
-def get_latest_release(repo_url):
-    api_url = f"https://api.github.com/repos/{repo_url}/releases/latest"
-    try:
-        response = requests.get(api_url, timeout=5)  # Set a timeout of 5 seconds
-        response.raise_for_status()  # Raise an error for bad responses
-        release_data = response.json()
-        tag_name = release_data.get('tag_name', 'No releases found')
-        published_at = release_data.get('published_at', 'No date found')
-        return tag_name, published_at
-    except requests.exceptions.Timeout:
-        return 'Request timed out', ''
-    except requests.exceptions.RequestException as e:
-        return f'Error fetching release info: {e}', ''
 
 
 # Hauptprogramm
@@ -318,18 +304,11 @@ else:
 st.write("")
 st.write("")
 
-# Get the latest release number and date
-latest_release, release_date = get_latest_release("davidoesch/wo-sind-briefkaesten")
 
-# Format the release date
-if release_date != 'No date found':
-    formatted_date = release_date.split("T")[0]  # Extracting only the date part
-else:
-    formatted_date = 'N/A'
 
 st.markdown("---")
 st.write(
-    f"🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch, Version: {latest_release} vom {formatted_date}"
+    f"🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch, Version: v1.0.1 vom 17.12.2024"
 )
 st.markdown(
     "Mehr infos und :star: unter [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
