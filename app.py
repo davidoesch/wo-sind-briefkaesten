@@ -297,5 +297,5 @@ st.write(
     "🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch "
 )
 st.markdown(
-    "More infos and :star: at [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
+    "Mehr infos und :star: unter [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
 )
