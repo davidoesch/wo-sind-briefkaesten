@@ -258,7 +258,7 @@ if st.button("Berechnen", key="calculate_button"):
                 for street, count in sub_wohnungen_by_street.items():
                     aggregated_wohnungen_by_street[street] += count
             progress_bar.progress((i + 1) / len(sub_polygons))
-        progress_text.text("Prozess abgeschlossen!")
+        progress_text.text("Analyse erfolgreich abgeschlossen")
 
         # Briefkästen direkt anzeigen
         st.subheader(f"Briefkästen: {total_wohnungen}")
