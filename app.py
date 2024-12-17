@@ -221,6 +221,17 @@ def create_map(center, zoom):
     return m
 
 
+# Function to get the latest release number and date from the GitHub repo
+def get_latest_release(repo_url):
+    api_url = f"https://api.github.com/repos/{repo_url}/releases/latest"
+    response = requests.get(api_url)
+    if response.status_code == 200:
+        release_data = response.json()
+        tag_name = release_data.get('tag_name', 'No releases found')
+        published_at = release_data.get('published_at', 'No date found')
+        return tag_name, published_at
+    else:
+        return 'Error fetching release info', ''
 
 
 # Hauptprogramm
@@ -271,7 +282,7 @@ if st.button("Berechnen", key="calculate_button"):
 
         # Briefkästen direkt anzeigen
         st.subheader(f"Briefkästen: {total_wohnungen}")
-        st.write(f"Entspricht der Gesamtanzahl Wohnungen  im Polygon")
+        st.markdown(f"Entspricht der Gesamtanzahl [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#grundannahme) im Polygon")
 
         # Details als Tabellen anzeigen
         with st.expander("Details: Wohnungen nach Adressen"):
@@ -304,10 +315,18 @@ else:
 st.write("")
 st.write("")
 
+# Get the latest release number and date
+latest_release, release_date = get_latest_release("davidoesch/wo-sind-briefkaesten")
+
+# Format the release date
+if release_date != 'No date found':
+    formatted_date = release_date.split("T")[0]  # Extracting only the date part
+else:
+    formatted_date = 'N/A'
 
 st.markdown("---")
 st.write(
-    "🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch "
+    f"🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch, Version: {latest_release} vom {formatted_date}"
 )
 st.markdown(
     "Mehr infos und :star: unter [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
