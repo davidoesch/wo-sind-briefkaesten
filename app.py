@@ -224,14 +224,17 @@ def create_map(center, zoom):
 # Function to get the latest release number and date from the GitHub repo
 def get_latest_release(repo_url):
     api_url = f"https://api.github.com/repos/{repo_url}/releases/latest"
-    response = requests.get(api_url)
-    if response.status_code == 200:
+    try:
+        response = requests.get(api_url, timeout=5)  # Set a timeout of 5 seconds
+        response.raise_for_status()  # Raise an error for bad responses
         release_data = response.json()
         tag_name = release_data.get('tag_name', 'No releases found')
         published_at = release_data.get('published_at', 'No date found')
         return tag_name, published_at
-    else:
-        return 'Error fetching release info', ''
+    except requests.exceptions.Timeout:
+        return 'Request timed out', ''
+    except requests.exceptions.RequestException as e:
+        return f'Error fetching release info: {e}', ''
 
 
 # Hauptprogramm
@@ -282,7 +285,7 @@ if st.button("Berechnen", key="calculate_button"):
 
         # Briefkästen direkt anzeigen
         st.subheader(f"Briefkästen: {total_wohnungen}")
-        st.markdown(f"Entspricht der Gesamtanzahl Wohnungen [(Annahmen)](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#grundannahme) im Polygon")
+        st.markdown(f"Entspricht der Gesamtanzahl Wohnungen ([Annahmen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#grundannahme)) im Polygon")
 
         # Details als Tabellen anzeigen
         with st.expander("Details: Wohnungen nach Adressen"):
