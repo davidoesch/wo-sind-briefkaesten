@@ -198,7 +198,11 @@ def create_map(center, zoom):
             "circle": False,
             "marker": False,
             "circlemarker": False,
-            "polygon": True,
+            "polygon": {
+                "shapeOptions": {
+                    "color": "#ff0000"
+                },
+            },
         },
         edit_options={
             "edit": False,
