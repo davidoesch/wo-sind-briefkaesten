@@ -150,6 +150,15 @@ def extract_wohnungen_and_counts(result):
         for feature in result['results']:
             attributes = feature.get('attributes', {})
             ganzwhg = attributes.get('ganzwhg', 0) or 0
+            # Check if ganzwhg is 0 and apply the additional checks
+            if ganzwhg == 0:
+
+                gkat = attributes.get('gkat')
+                gklas = attributes.get('gklas')
+                # Check if either gkat or gklas matches the specified values
+                if gkat in {1010, 1020, 1030, 1040,1060} or gklas in {1110,1121,1122,1130,1211,1212,1220,1230,1231,1241,1242,1251,1261,1262,1263,1264,1275}:
+                    ganzwhg = 1
+
             strnamenr = attributes.get('strname_deinr', "Unbekannt")
             strname = ", ".join(attributes.get('strname', "Unbekannt"))
             total_wohnungen += ganzwhg

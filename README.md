@@ -1,9 +1,38 @@
 # Wie viele Briefkästen gibt es?
 
 Eine interaktive Web-Anwendung zur Analyse der Gesamtanzahl von Wohnungen und darausfolgend Briefkästen in einem benutzerdefinierten Gebiet in der Schweiz. Dieses Tool eignet sich ideal für Zielgruppenanalysen, z. B. zur Planung von Marketingmassnahmen wie Flyer-Verteilung in Quartieren.
-Grundannahme: jede Wohnung verfügt auch über einen Briefkasten..
 
 -> website der Anwendung: [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
+
+## Grundannahme:
+Jede Wohnung 'ganzwhg' gemäss [Merkmalskatalog 4.2 des GWR](https://www.housing-stat.ch/de/help/42.html) verfügt auch über einen Briefkasten. 
+Des weiteren werden für Adressen mit folgenden CODES gemäss [Merkmalskatalog 4.2 des GWR](https://www.housing-stat.ch/de/help/42.html) mindestens ein Briefkasten hinzugefügt:
+
+| CODE | KAT   | BESCHREIBUNG                                              |
+| ---- | ----- | --------------------------------------------------------- |
+| 1010 | GKAT  | Provisorische Unterkunft                                  |
+| 1020 | GKAT  | Gebäude mit ausschliesslicher Wohnnutzung                 |
+| 1030 | GKAT  | Andere Wohngebäude (Wohngebäude mit Nebennutzung)         |
+| 1040 | GKAT  | Gebäude mit teilweiser Wohnnutzung                        |
+| 1060 | GKAT  | Gebäude ohne Wohnnutzung                                  |
+| 1110 | GKLAS | Gebäude mit einer Wohnung                                 |
+| 1121 | GKLAS | Gebäude mit zwei Wohnungen                                |
+| 1122 | GKLAS | Gebäude mit drei oder mehr Wohnungen                      |
+| 1130 | GKLAS | Wohngebäude für Gemeinschaften                            |
+| 1211 | GKLAS | Hotelgebäude                                              |
+| 1212 | GKLAS | Andere Gebäude für kurzfristige Beherbergung              |
+| 1220 | GKLAS | Bürogebäude                                               |
+| 1230 | GKLAS | Gross-und Einzelhandelsgebäude                            |
+| 1231 | GKLAS | Restaurants und Bars in Gebäuden ohne Wohnnutzung         |
+| 1241 | GKLAS | Gebäude des Verkehrs- und Nachrichtenwesens ohne Garagen  |
+| 1242 | GKLAS | Garagengebäude                                            |
+| 1251 | GKLAS | Industriegebäude                                          |
+| 1261 | GKLAS | Gebäude für Kultur- und Freizeitzwecke                    |
+| 1262 | GKLAS | Museen und Bibliotheken                                   |
+| 1263 | GKLAS | Schul- und Hochschulgebäude                               |
+| 1264 | GKLAS | Krankenhäuser und Facheinrichtungen des Gesundheitswesens |
+| 1275 | GKLAS | Andere Gebäude für die kollektive Unterkunft              |
+
 
 ## Hauptmerkmale
 - **Polygon-Zeichenfunktion:** Benutzer können Polygone auf einer interaktiven Karte zeichnen oder aus einem map.geo.admin.ch link generieren

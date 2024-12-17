@@ -127,7 +127,6 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
 
 
 def extract_wohnungen_and_counts(result):
-    """Extrahiert die Gesamtanzahl der Wohnungen, die Anzahl pro Straßennamen und die Anzahl der Features."""
     global total_adressen
     total_wohnungen = 0
     wohnungen_by_streetnr = defaultdict(int)
@@ -136,29 +135,44 @@ def extract_wohnungen_and_counts(result):
 
     if result and 'results' in result:
         total_features = len(result['results'])
-        for feature in result['results']:
 
+        if total_features == 0:
+            print("Keine Adressen gefunden.")
+            return 0, {}, {}
+
+        for feature in result['results']:
             attributes = feature.get('attributes', {})
             ganzwhg = attributes.get('ganzwhg', 0) or 0
+
+            # Check if ganzwhg is 0 and apply the additional checks
+            if ganzwhg == 0:
+                gkat = attributes.get('gkat')
+                gklas = attributes.get('gklas')
+                # Check if either gkat or gklas matches the specified values
+                if gkat in {1010, 1020, 1030, 1040,1060} or gklas in {1110,1121,1122,1130,1211,1212,1220,1230,1231,1241,1242,1251,1261,1262,1263,1264,1275}:
+                    ganzwhg = 1
+
             strnamenr = attributes.get('strname_deinr', "Unbekannt")
             strname = ", ".join(attributes.get('strname', "Unbekannt"))
-
             total_wohnungen += ganzwhg
             wohnungen_by_streetnr[strnamenr] += ganzwhg
             wohnungen_by_street[strname] += ganzwhg
 
+        print(f"Anzahl der gefundenen Adressen: {total_features}")
+        total_adressen += total_features
 
-    print(f"Anzahl der gefundenen Adressen: {total_features}")
-    total_adressen = total_adressen + total_features
+        if total_features >= 200:
+            print("***************")
+            print("Warnung: Mehr als 200 Adressen. Bitte unterteilen Sie die Zeichnung in kleinere Abschnitte und führen Sie die Abfrage mehrfach aus.")
+            print("***************")
+            wohnungen_by_streetnr = defaultdict(int)
+            total_wohnungen = 0
 
-    if total_features >= 200:
-        print("***************")
-        print("Warnung: Mehr als 200 Adressen. Bitte unterteilen Sie die Zeichnung in kleinere Abschnitte und führen Sie die Abfrage mehrfach aus.")
-        print("***************")
-        wohnungen_by_streetnr = defaultdict(int)
-        total_wohnungen = 0
+    else:
+        print("Keine Ergebnisse gefunden.")
+        return 0, {}, {}
 
-    return total_wohnungen, wohnungen_by_streetnr,wohnungen_by_street
+    return total_wohnungen, wohnungen_by_streetnr, wohnungen_by_street
 
 # Hauptprogramm
 if __name__ == "__main__":
