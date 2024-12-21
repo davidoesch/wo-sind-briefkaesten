@@ -463,7 +463,7 @@ if st.button("Berechnen", key="calculate_button"):
 
         # Iteriere über Subsets mit Countdown
         for i, sub_polygon in enumerate(sub_polygons):
-            progress_text.text(f"Auslesen Wohnungen(subset): {len(sub_polygons) - i}")
+            progress_text.text(f"Wohnungen: subset noch auszulesen: {len(sub_polygons) - i}")
             result = query_geoadmin_with_polygon(sub_polygon)
             if result:
                 sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
@@ -484,7 +484,7 @@ if st.button("Berechnen", key="calculate_button"):
         # Briefkästen direkt anzeigen
         total_briefkaesten = total_wohnungen + total_geschaefte
         st.subheader(f"Briefkästen: {total_briefkaesten}")
-        st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#wohnungen): {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#geschäfte) {total_geschaefte} im Polygon")
+        st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#wohnungen) {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#geschäfte) {total_geschaefte} im Polygon")
 
         # Details als Tabellen anzeigen
         with st.expander("Details: Wohnungen nach Adressen"):
