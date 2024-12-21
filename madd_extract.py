@@ -7,7 +7,62 @@ from collections import defaultdict
 import json
 import numpy as np
 from swiftshadow import QuickProxy
+from shapely import wkt
+import duckdb as db
+import ast
+import requests
+import re
+from urllib.parse import urlparse, parse_qs
 
+def extract_freeform(addresses):
+    """
+    Extracts 'freeform' fields from a list of address dictionaries.
+
+    This function takes a list of dictionaries, each representing an address,
+    and extracts the value associated with the 'freeform' key from each dictionary.
+    If the input is a JSON string, it will be parsed into a list of dictionaries first.
+    The extracted 'freeform' values are then concatenated into a single string,
+    separated by commas.
+
+    Args:
+        addresses (str or list): A JSON string or a list of dictionaries, where each
+                                 dictionary contains address information.
+
+    Returns:
+        str: A comma-separated string of 'freeform' values, or None if an error occurs.
+    """
+    try:
+        # Parse the JSON if it's in string format
+        if isinstance(addresses, str):
+            addresses = json.loads(addresses)
+        # Extract 'freeform' fields from the list of dictionaries
+        return ', '.join([addr.get('freeform', '') for addr in addresses if 'freeform' in addr])
+    except Exception as e:
+        return None
+
+def clean_df(df, column_name):
+    """
+    Converts list-like strings in a specified column to comma-separated strings.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+        column_name (str): The name of the column to clean.
+
+    Returns:
+        pd.DataFrame: The modified DataFrame with the cleaned column.
+    """
+    def convert_to_comma_separated(value):
+        try:
+            # Safely evaluate the string as a list
+            items = ast.literal_eval(value)
+            # Join the items with a comma
+            return ",".join(items)
+        except (ValueError, SyntaxError):
+            # Return the original value if conversion fails
+            return value
+
+    df[column_name] = df[column_name].apply(convert_to_comma_separated)
+    return df
 
 def resolve_kml_url(shortened_url):
     """Löst eine gekürzte URL auf, extrahiert die KML-URL und entfernt '&featureInfo=default'."""
@@ -18,21 +73,26 @@ def resolve_kml_url(shortened_url):
         raise ValueError(f"Fehler beim Auflösen der URL: {response.status_code}")
 
     if "https://public.geo.admin.ch/api/kml" in response.url:
-        start_index = response.url.find("https://public.geo.admin.ch/api/kml")
-        clean_url = response.url[start_index:]
+        # Parse the URL
+        parsed_url = urlparse(response.url)
+        query_params = parse_qs(parsed_url.fragment)
 
-        if "&featureInfo=default" in clean_url:
-            clean_url = clean_url.split("&featureInfo=default")[0]
-
+        # Extract the 'layers' parameter and split to get the desired part
+        layers_param = query_params.get('layers', [''])[0]
+        clean_url = layers_param.replace('KML|', '', 1)
         return clean_url
 
     raise ValueError("Keine gültige Zeichnung gefunden.")
 
 def load_kml_polygon_directly(kml_url):
     """Parst ein KML-Polygon direkt aus einer URL und gibt es als Shapely-Polygon zurück."""
+    headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
     resolved_url = resolve_kml_url(kml_url)
+
     print(f"Aufruf public.geo.admin.ch ... ")
-    response = requests.get(resolved_url, timeout=15)
+    response = requests.get(resolved_url, timeout=30)
     print(f"... erhalten ")
     if response.status_code != 200:
         raise ValueError(f"Fehler beim Laden der KML-Datei: {response.status_code}")
@@ -181,7 +241,8 @@ if __name__ == "__main__":
     #kml_url = "https://s.geo.admin.ch/p56ijeogsuta" #SChliern gross
     #kml_url = "https://s.geo.admin.ch/jpve0fg64vai" #köniz
     #kml_url = "https://s.geo.admin.ch/nct5odun6mkp"
-    kml_url = input("Bitte Link zur Zeichnung eingeben: ")
+    kml_url = "https://s.geo.admin.ch/aemkr12m23lk" #bumpliiz
+    #kml_url = input("Bitte Link zur Zeichnung eingeben: ")
     # print(f"Link zur Zeichnung ist: {kml_url}")
 
     polygon = load_kml_polygon_directly(kml_url)
@@ -193,6 +254,7 @@ if __name__ == "__main__":
     total_wohnungen = 0
     aggregated_wohnungen_by_streetnr = defaultdict(int)
     aggregated_wohnungen_by_street = defaultdict(int)
+
 
     for i, sub_polygon in enumerate(sub_polygons):
         print(f"Verarbeite Subpolygon {i + 1} von {len(sub_polygons)}...")
@@ -234,3 +296,85 @@ if __name__ == "__main__":
     print("-------------------------------------------------------")
     print(f"Gesamtanzahl Wohnungen im Polygon: {total_wohnungen}")
     print("-------------------------------------------------------")
+
+    # Initial setup
+    con = db.connect()
+
+    # To perform spatial operations, the spatial extension is required.
+    # src - https://duckdb.org/docs/api/python/overview.html#loading-and-installing-extensions
+
+    con.install_extension("spatial")
+    con.load_extension("spatial")
+
+    # To load a Parquet file from S3, the httpfs extension is required.
+    # src - https://duckdb.org/docs/guides/import/s3_import.html
+
+    con.install_extension("httpfs")
+    con.load_extension("httpfs")
+
+    # Tell DuckDB which S3 region to find Overture's data bucket in
+    # src - https://github.com/OvertureMaps/data/blob/main/README.md#how-to-access-overture-maps-data
+    con.sql("SET s3_region='us-west-2'")
+
+    # Overture structure
+    # https://github.com/OvertureMaps/data/blob/main/README.md#how-to-access-overture-maps-data
+
+    # Fetch the latest release information from the Overture Maps GitHub repository
+    response = requests.get("https://docs.overturemaps.org/release/latest/")
+    html_content = response.text
+
+    # Use regular expression to find the release date in the title
+    match = re.search(r'data-rh=true>(\d{4}-\d{2}-\d{2}\.\d+)', html_content)
+    if match:
+        release_date = match.group(1)
+        print(release_date)
+    else:
+        print("Release date not found")
+
+    # Construct the parquet path using the latest release date
+    parquet_path = f"s3://overturemaps-us-west-2/release/{release_date}/theme=places/type=*/*"
+
+
+    query = f"""
+    SELECT
+        id,
+        names.primary AS primary_name,
+        json_extract_string(categories, 'primary') AS category,
+        json_extract_string(categories, 'alternate') AS category_alt,
+        addresses AS addresses,
+        ST_AsText(geometry) as geometry
+    FROM
+        read_parquet('{parquet_path}', filename=true, hive_partitioning=1)
+    WHERE
+        ST_Intersects(geometry, ST_GeomFromText('{polygon.wkt}'))
+    """
+
+
+    result_df = con.execute(query).fetchdf()
+
+    # Extract place names and addresses
+    place_and_address_df = result_df[['primary_name', 'addresses','category','category_alt']].dropna()
+
+    # Apply the extract freeform function to the 'addresses' column
+    place_and_address_df['flattened_addresses'] = place_and_address_df['addresses'].apply(extract_freeform)
+
+    # Drop the original 'addresses' column for cleaner output (optional)
+    place_and_address_df = place_and_address_df.drop(columns=['addresses'])
+
+    # converting dict to list
+    place_and_address_df = clean_df(place_and_address_df, 'category_alt')
+
+    # Display the resulting DataFrame
+    print(place_and_address_df)
+    num_frames = len(place_and_address_df)
+    print(f"Anzahl der Frames: {num_frames}")
+
+    #aggregate place_and_address_df by flattened_addresses
+    total_places_pro_adresse_df = place_and_address_df.groupby('flattened_addresses').size().reset_index(name='count')
+
+    total_places_pro_adresse = total_places_pro_adresse_df.values.tolist()
+
+ 
+
+    breakpoint()
+    print("ende")
