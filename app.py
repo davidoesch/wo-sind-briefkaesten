@@ -380,7 +380,7 @@ def extract_overture(polygon):        # Initial setup
 
 # Hauptprogramm
 # Streamlit app
-
+release_date = "-"
 st.set_page_config(
     page_title="Briefkasten",
     page_icon="📮",
