@@ -6,10 +6,10 @@
 
   ## Grundannahme:
   ### Wohnungen
-  Jede Wohnung 'ganzwhg' gemäss [Merkmalskatalog 4.2 des GWR](https://www.housing-stat.ch/de/help/42.html) verfügt auch über einen Briefkasten als Zustelladresse. 
+  Annahme: Jede Wohnung 'ganzwhg' gemäss [Merkmalskatalog 4.2 des GWR](https://www.housing-stat.ch/de/help/42.html) verfügt auch über einen Briefkasten als Zustelladresse. 
 
   ### Geschäfte
-  Die Zustelladresse / Briefkasten werden aus dem [<em>Overture places</em> ](https://docs.overturemaps.org/guides/places/) Datensatz abgeleitet. Zusätzlich werden
+  Annahme: Die Zustelladresse / Briefkasten entsprechen dem [<em>Overture places</em> ](https://docs.overturemaps.org/guides/places/) Datensatz. Kategorien wie *park* etc können über die Resultateliste gefiltert werden. Zusätzlich werden
   für Adressen mit folgenden CODES gemäss [Merkmalskatalog 4.2 des GWR](https://www.housing-stat.ch/de/help/42.html) mindestens eine ustelladresse / Briefkasten hinzugefügt:
 
   | CODE | KAT   | BESCHREIBUNG                                              |

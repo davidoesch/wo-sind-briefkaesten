@@ -37,7 +37,39 @@ import duckdb as db
 import ast
 import requests
 import re
+def get_latest_release_date(repo_url):
+    # Construct the releases page URL
+    releases_url = f"{repo_url}/releases"
 
+    # Send a GET request to the releases page
+    response = requests.get(releases_url)
+
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch the releases page: {response.status_code}")
+
+    # Parse the HTML content
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    # Find the latest release tag (usually it's the first `a` with the class `Link--primary` in the releases list)
+    latest_release_tag = soup.find('a', {'class': 'Link--primary'})
+
+    if not latest_release_tag:
+        raise Exception("Could not find any releases on the page.")
+
+    # Extract the release version text
+    latest_release = latest_release_tag['href'].split('/')[-1]
+
+
+    # Find the release date (usually it's in a `relative-time` tag within the release tag)
+    release_date_tag = soup.find('relative-time')
+
+    if not release_date_tag:
+        raise Exception("Could not find the release date on the page.")
+
+    # Extract the release date text
+    release_date = release_date_tag['datetime']
+
+    return latest_release, release_date
 
 def extract_freeform(addresses):
     """
@@ -251,6 +283,7 @@ def create_map(center, zoom):
         tiles="https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
         attr='Map data: &copy; <a href="https://www.swisstopo.ch" target="_blank" rel="noopener noreferrer">swisstopo</a>, <a href="https://www.housing-stat.ch/" target="_blank" rel="noopener noreferrer">BFS</a>',
         )
+
     Draw(
         export=False,
         position="topleft",
@@ -386,16 +419,19 @@ def extract_overture(polygon):        # Initial setup
 # Hauptprogramm
 # Streamlit app
 release_date = "-"
+gh_release= "-"
+gh_date= "-"
+
 st.set_page_config(
     page_title="Briefkasten",
     page_icon="📮",
 )
 st.title("Wieviele Briefkästen gibt es ?")
 st.markdown("""
-Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet berechnen. Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie. So funktioniert es:
+Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet berechnen. Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie:
 
 1. **Zeichnen Sie ein Gebiet auf der Karte ein.**
-2. **Klicken Sie auf <em>Berechnen</em>.**
+2. **Klicken Sie auf *Berechnen*.**
 3. **Erhalten Sie die Anzahl der Zustelladressen.**
 
 """)
@@ -438,7 +474,7 @@ if st.button("Berechnen", key="calculate_button"):
         progress_text.text("Auslesen Wohnungen abgeschlossen")
 
         # Geschäfte extraktion
-        with st.spinner('Auslesen Geschäfte...'):
+        with st.spinner('Auslesen Geschäfte (dauert ca 1 min)...'):
             total_geschaefte, place_and_address_df, total_places_pro_adresse_df, release_date = extract_overture(polygon)
         print(f"Anzahl der Geschäfte: {total_geschaefte}")
 
@@ -446,7 +482,7 @@ if st.button("Berechnen", key="calculate_button"):
         # Briefkästen direkt anzeigen
         total_briefkaesten = total_wohnungen + total_geschaefte
         st.subheader(f"Briefkästen: {total_briefkaesten}")
-        st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#wohnungen): {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#geschaefte) {total_geschaefte} im Polygon")
+        st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#wohnungen): {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#geschäfte) {total_geschaefte} im Polygon")
 
         # Details als Tabellen anzeigen
         with st.expander("Details: Wohnungen nach Adressen"):
@@ -496,10 +532,11 @@ st.write("")
 st.write("")
 
 
+gh_release,gh_date=get_latest_release_date("https://github.com/davidoesch/wo-sind-briefkaesten/")
 
 st.markdown("---")
 st.write(
-    f"🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch, [Overture Maps Foundation](https://overturemaps.org), Overture  Release {release_date},  Anwendung Version: v1.0.1 vom 17.12.2024"
+    f"🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch, [Overture Maps Foundation](https://overturemaps.org), Overture  Release {release_date},  Anwendung Version: {gh_release} vom {gh_date}"
 )
 st.markdown(
     "Mehr infos und :star: unter [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
