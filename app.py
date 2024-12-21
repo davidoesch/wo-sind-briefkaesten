@@ -430,9 +430,9 @@ st.set_page_config(
 )
 st.title("Wieviele Briefkästen gibt es ?")
 st.markdown("""
-Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet berechnen. Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie:
+Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet abschätzen. Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie:
 
-1. **Zeichnen Sie ein Gebiet auf der Karte ein.**
+1. **Zeichnen Sie ein Gebiet auf der Karte ein (max 10km2).**
 2. **Klicken Sie auf *Berechnen*.**
 3. **Erhalten Sie die Anzahl der Zustelladressen.**
 
