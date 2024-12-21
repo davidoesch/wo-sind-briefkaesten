@@ -37,6 +37,8 @@ import duckdb as db
 import ast
 import requests
 import re
+from bs4 import BeautifulSoup
+
 def get_latest_release_date(repo_url):
     # Construct the releases page URL
     releases_url = f"{repo_url}/releases"

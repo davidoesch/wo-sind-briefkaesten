@@ -7,3 +7,4 @@ pandas
 folium
 streamlit-folium
 duckdb
+bs4
