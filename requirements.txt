@@ -6,5 +6,4 @@ numpy
 pandas
 folium
 streamlit-folium
-ast
 duckdb
