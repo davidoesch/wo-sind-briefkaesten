@@ -267,8 +267,7 @@ def create_map(center, zoom):
             },
         },
         edit_options={
-            "edit": False,
-            "remove": False
+            "edit": False
         }
     ).add_to(m)
     return m
@@ -366,11 +365,17 @@ def extract_overture(polygon):        # Initial setup
         total_places_pro_adresse_df = place_and_address_df.groupby('flattened_addresses').size().reset_index(name='count')
         total_places_pro_adresse_df =total_places_pro_adresse_df.rename(columns={'flattened_addresses': 'Adresse', 'count': 'Geschäfte'})
 
+        #sortiere total_places_pro_adresse_df nach 'Adresse' absteigend
+        total_places_pro_adresse_df = total_places_pro_adresse_df.sort_values(by='Geschäfte', ascending=False)
+
         #ändere in place_and_address_df den Namen der Spalte 'flattened_addresses' in 'Adresse' und die Spalte 'category' in 'Kategorie' und 'category_alt' in 'Kategorie_Alternative' und 'primary_name' in 'Geschäft'
         place_and_address_df = place_and_address_df.rename(columns={'flattened_addresses': 'Adresse', 'primary_name': 'Geschäft', 'category': 'Kategorie', 'category_alt': 'Kategorie_Alternative'})
 
         #re-order: erste Spalte in place_and_address_df ist die Adresse, die zweite Spalte ist das Geschäft, die dritte Spalte ist die Kategorie und die vierte Spalte ist die Kategorie_Alternative
         place_and_address_df = place_and_address_df[['Adresse', 'Geschäft', 'Kategorie', 'Kategorie_Alternative']]
+
+        #Sortiere place_and_address_df nach 'Adresse' absteigend
+        place_and_address_df = place_and_address_df.sort_values(by='Adresse', ascending=False)
 
 
         #total_places_pro_adresse = total_places_pro_adresse_df.values.tolist()
@@ -386,6 +391,14 @@ st.set_page_config(
     page_icon="📮",
 )
 st.title("Wieviele Briefkästen gibt es ?")
+st.markdown("""
+Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet berechnen. Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie. So funktioniert es:
+
+1. **Zeichnen Sie ein Gebiet auf der Karte ein.**
+2. **Klicken Sie auf <em>Berechnen</em>.**
+3. **Erhalten Sie die Anzahl der Zustelladressen.**
+
+""")
 
 m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
 output = st_folium(m, width=700, height=500)
@@ -422,7 +435,7 @@ if st.button("Berechnen", key="calculate_button"):
                 for street, count in sub_wohnungen_by_street.items():
                     aggregated_wohnungen_by_street[street] += count
             progress_bar.progress((i + 1) / len(sub_polygons))
-        progress_text.text("Analyse erfolgreich abgeschlossen")
+        progress_text.text("Auslesen Wohnungen abgeschlossen")
 
         # Geschäfte extraktion
         with st.spinner('Auslesen Geschäfte...'):
@@ -433,7 +446,7 @@ if st.button("Berechnen", key="calculate_button"):
         # Briefkästen direkt anzeigen
         total_briefkaesten = total_wohnungen + total_geschaefte
         st.subheader(f"Briefkästen: {total_briefkaesten}")
-        st.markdown(f"Entspricht der Summe der Wohnungen: {total_wohnungen} ([Annahmen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#grundannahme)) und der Summe der Geschäfte: {total_geschaefte} im Polygon")
+        st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#wohnungen): {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#geschaefte) {total_geschaefte} im Polygon")
 
         # Details als Tabellen anzeigen
         with st.expander("Details: Wohnungen nach Adressen"):
