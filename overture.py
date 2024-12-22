@@ -115,6 +115,9 @@ WHERE
 
 result_df = con.execute(query).fetchdf()
 
+# explicitly close the connection
+con.close()
+
 # Extract place names and addresses
 place_and_address_df = result_df[['primary_name', 'addresses','category','category_alt']].dropna()
 

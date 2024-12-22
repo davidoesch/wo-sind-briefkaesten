@@ -379,6 +379,9 @@ def extract_overture(polygon):        # Initial setup
 
         result_df = con.execute(query).fetchdf()
 
+        # explicitly close the connection
+        con.close()
+
         # Extract place names and addresses
         place_and_address_df = result_df[['primary_name', 'addresses','category','category_alt']].dropna()
 
@@ -446,85 +449,90 @@ if st.button("Berechnen", key="calculate_button"):
         drawn_polygon = output["last_active_drawing"]["geometry"]["coordinates"][0]
         polygon = Polygon(drawn_polygon)
         #st.write(f"polyarea: {polygon.area }")
-        if polygon.area > 0.001:  # 0.001 entspricht ungefähr 10 km²
-            st.warning("Das gezeichnete Polygon ist grösser als 10 km². Die Berechnung kann sehr lange dauern und möglicherweise aufgrund von API-Limitierungen von geo.admin.ch abbrechen.")
 
-        # Use the drawn polygon for calculations
-        max_area = 0.000005
-        sub_polygons = split_polygon(polygon, max_area)
+        # Wenn polygon.area > 0.015, dann wird die Berechnung nihct gestartet und der nutzer aufgefordert ein kleineres Polygon zu zeichnen (max 150km2)
+        if polygon.area > 0.015:
+            st.error("Das gezeichnete Polygon ist grösser als 150 km². Bitte zeichnen Sie ein kleineres Polygon.")
+        else:
+            if polygon.area > 0.001:  # 0.001 entspricht ungefähr 10 km²
+                st.warning("Das gezeichnete Polygon ist grösser als 10 km². Die Berechnung kann sehr lange dauern und möglicherweise aufgrund von API-Limitierungen von geo.admin.ch abbrechen.")
 
-        total_adressen = 0
-        total_wohnungen = 0
-        aggregated_wohnungen_by_streetnr = defaultdict(int)
-        aggregated_wohnungen_by_street = defaultdict(int)
+            # Use the drawn polygon for calculations
+            max_area = 0.000005
+            sub_polygons = split_polygon(polygon, max_area)
 
-        progress_bar = st.progress(0)
-        progress_text = st.empty()  # Platzhalter für Fortschrittsanzeige
+            total_adressen = 0
+            total_wohnungen = 0
+            aggregated_wohnungen_by_streetnr = defaultdict(int)
+            aggregated_wohnungen_by_street = defaultdict(int)
 
-        # Iteriere über Subsets mit Countdown
-        for i, sub_polygon in enumerate(sub_polygons):
-            progress_text.text(f"Wohnungen: subset noch auszulesen: {len(sub_polygons) - i}")
-            result = query_geoadmin_with_polygon(sub_polygon)
-            if result:
-                sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
-                total_wohnungen += sub_total_wohnungen
-                for street, count in sub_wohnungen_by_streetnr.items():
-                    aggregated_wohnungen_by_streetnr[street] += count
-                for street, count in sub_wohnungen_by_street.items():
-                    aggregated_wohnungen_by_street[street] += count
-            progress_bar.progress((i + 1) / len(sub_polygons))
-        progress_text.text("Auslesen Wohnungen abgeschlossen")
+            progress_bar = st.progress(0)
+            progress_text = st.empty()  # Platzhalter für Fortschrittsanzeige
 
-        # Geschäfte extraktion
-        with st.spinner('Auslesen Geschäfte (dauert ca 1 min)...'):
-            total_geschaefte, place_and_address_df, total_places_pro_adresse_df, release_date = extract_overture(polygon)
-        print(f"Anzahl der Geschäfte: {total_geschaefte}")
+            # Iteriere über Subsets mit Countdown
+            for i, sub_polygon in enumerate(sub_polygons):
+                progress_text.text(f"Wohnungen: subset noch auszulesen: {len(sub_polygons) - i}")
+                result = query_geoadmin_with_polygon(sub_polygon)
+                if result:
+                    sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
+                    total_wohnungen += sub_total_wohnungen
+                    for street, count in sub_wohnungen_by_streetnr.items():
+                        aggregated_wohnungen_by_streetnr[street] += count
+                    for street, count in sub_wohnungen_by_street.items():
+                        aggregated_wohnungen_by_street[street] += count
+                progress_bar.progress((i + 1) / len(sub_polygons))
+            progress_text.text("Auslesen Wohnungen abgeschlossen")
 
-
-        # Briefkästen direkt anzeigen
-        total_briefkaesten = total_wohnungen + total_geschaefte
-        st.subheader(f"Briefkästen: {total_briefkaesten}")
-        st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#wohnungen) {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#geschäfte) {total_geschaefte} im Polygon")
-
-        # Details als Tabellen anzeigen
-        with st.expander("Details: Wohnungen nach Adressen"):
-            adressen_df = pd.DataFrame(
-                [{"Adresse": adr, "Wohnungen": count} for adr, count in aggregated_wohnungen_by_streetnr.items()]
-            )
-            if not adressen_df.empty:
-                adressen_df_sorted = adressen_df.sort_values("Adresse")
-                st.write(adressen_df_sorted)
-            else:
-                st.write("Keine Adressen gefunden.")
+            # Geschäfte extraktion
+            with st.spinner('Auslesen Geschäfte (dauert ca 1 min)...'):
+                total_geschaefte, place_and_address_df, total_places_pro_adresse_df, release_date = extract_overture(polygon)
+            print(f"Anzahl der Geschäfte: {total_geschaefte}")
 
 
-        with st.expander("Details: Wohnungen nach Strassen"):
-            strassen_df = pd.DataFrame(
-                [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
-            )
-            if not strassen_df.empty:
-                strassen_df_sorted = strassen_df.sort_values("Strasse")
-                st.write(strassen_df_sorted)
-            else:
-                st.write("Keine Strassen gefunden.")
+            # Briefkästen direkt anzeigen
+            total_briefkaesten = total_wohnungen + total_geschaefte
+            st.subheader(f"Briefkästen: {total_briefkaesten}")
+            st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#wohnungen) {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#geschäfte) {total_geschaefte} im Polygon")
+
+            # Details als Tabellen anzeigen
+            with st.expander("Details: Wohnungen nach Adressen"):
+                adressen_df = pd.DataFrame(
+                    [{"Adresse": adr, "Wohnungen": count} for adr, count in aggregated_wohnungen_by_streetnr.items()]
+                )
+                if not adressen_df.empty:
+                    adressen_df_sorted = adressen_df.sort_values("Adresse")
+                    st.write(adressen_df_sorted)
+                else:
+                    st.write("Keine Adressen gefunden.")
 
 
-        with st.expander("Details: Adressen"):
-            st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
+            with st.expander("Details: Wohnungen nach Strassen"):
+                strassen_df = pd.DataFrame(
+                    [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
+                )
+                if not strassen_df.empty:
+                    strassen_df_sorted = strassen_df.sort_values("Strasse")
+                    st.write(strassen_df_sorted)
+                else:
+                    st.write("Keine Strassen gefunden.")
 
-        #Tabelle mit total_places_pro_adresse anzeigen
-        with st.expander("Details: Geschäfte nach Adressen"):
-            if not total_places_pro_adresse_df.empty:
-                st.write(total_places_pro_adresse_df)
-            else:
-                st.write("Keine Geschäfte gefunden.")
 
-        # Tabelle mit place_and_address_df anzeigen
-        with st.expander("Details: Geschäfte"):
-            if not place_and_address_df.empty:
-                st.write(place_and_address_df)
-            else:
-                st.write("Keine Geschäfte gefunden.")
+            with st.expander("Details: Adressen"):
+                st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
+
+            #Tabelle mit total_places_pro_adresse anzeigen
+            with st.expander("Details: Geschäfte nach Adressen"):
+                if not total_places_pro_adresse_df.empty:
+                    st.write(total_places_pro_adresse_df)
+                else:
+                    st.write("Keine Geschäfte gefunden.")
+
+            # Tabelle mit place_and_address_df anzeigen
+            with st.expander("Details: Geschäfte"):
+                if not place_and_address_df.empty:
+                    st.write(place_and_address_df)
+                else:
+                    st.write("Keine Geschäfte gefunden.")
 
 
 else:
