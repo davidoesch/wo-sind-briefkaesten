@@ -40,6 +40,15 @@ import re
 from bs4 import BeautifulSoup
 
 def get_latest_release_date(repo_url):
+    """
+    Fetches the latest release version and release date from a GitHub repository.
+    Args:
+        repo_url (str): The URL of the GitHub repository.
+    Returns:
+        tuple: A tuple containing the latest release version (str) and the release date (str in ISO 8601 format).
+    Raises:
+        Exception: If the releases page cannot be fetched or if no releases or release dates are found.
+    """
     # Construct the releases page URL
     releases_url = f"{repo_url}/releases"
 
