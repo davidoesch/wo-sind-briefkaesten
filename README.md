@@ -1,16 +1,15 @@
-  # Wie viele  Zustelladressen / Briefkästen gibt es?
+  # How many delivery addresses / mailboxes are there?
 
-  Eine interaktive Web-Anwendung zur Schätzung der Gesamtanzahl von  Zustelladressen / Briefkästen für einen benutzerdefinierten Perimeter basierend auf der Anzahl Wohnungen gemäss [Eidg. Gebäude- und Wohnungsregister (GWR) des Bundesamt für Statistik BFS](https://www.bfs.admin.ch/bfs/de/home/register/gebaeude-wohnungsregister.html) und Anzahl Geschäfte gemäss <em>places</em> von [Overture Maps Foundation](https://overturemaps.org). Dieses Tool eignet sich ideal für Zielgruppenanalysen, z. B. zur Planung von Marketingmassnahmen wie Flyer-Verteilung in Quartieren.
+  An interactive web application to estimate the total number of delivery addresses / mailboxes (Zustelladressen / Briefkästen )for a user-defined perimeter in Switzerland based on the number of apartments according to the [Federal Building and Housing Register (GWR) of the Federal Statistical Office BFS](https://www.bfs.admin.ch/bfs/de/home/register/gebaeude-wohnungsregister.html) and the number of businesses according to <em>places</em> from the [Overture Maps Foundation](https://overturemaps.org). This tool is ideal for target group analysis, e.g., for planning marketing measures such as flyer distribution in neighborhoods.
 
-  -> website der Anwendung: [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
+  -> application website (DE): [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
-  ## Grundannahme:
-  ### Wohnungen
-  Annahme: Jede Wohnung 'ganzwhg' gemäss [Merkmalskatalog 4.2 des GWR](https://www.housing-stat.ch/de/help/42.html) verfügt auch über einen Briefkasten als Zustelladresse. 
+  ## Basic assumption:
+  ### Apartments
+  Assumption: Each apartment 'ganzwhg' according to [Feature Catalog 4.2 of the GWR](https://www.housing-stat.ch/de/help/42.html) also has a mailbox as a delivery address.
 
-  ### Geschäfte
-  Annahme: Die Zustelladresse / Briefkasten entsprechen dem [<em>Overture places</em> ](https://docs.overturemaps.org/guides/places/) Datensatz. Kategorien wie *park* etc können über die Resultateliste gefiltert werden. Zusätzlich werden
-  für Adressen mit folgenden CODES gemäss [Merkmalskatalog 4.2 des GWR](https://www.housing-stat.ch/de/help/42.html) mindestens eine ustelladresse / Briefkasten hinzugefügt:
+  ### Businesses
+  Assumption: The delivery address / mailbox corresponds to the [<em>Overture places</em> ](https://docs.overturemaps.org/guides/places/) dataset. Categories such as *park* etc. can be filtered out from the result list. Additionally, at least one delivery address / mailbox is added for addresses with the following CODES according to [Feature Catalog 4.2 of the GWR](https://www.housing-stat.ch/de/help/42.html):
 
   | CODE | KAT   | BESCHREIBUNG                                              |
   | ---- | ----- | --------------------------------------------------------- |
@@ -37,17 +36,16 @@
   | 1264 | GKLAS | Krankenhäuser und Facheinrichtungen des Gesundheitswesens |
   | 1275 | GKLAS | Andere Gebäude für die kollektive Unterkunft              |
 
+  ## Main features
+  - **Polygon drawing function:** Users can draw polygons on an interactive map or generate from a map.geo.admin.ch link.
+  - **Automatic subdivision of large polygons:** API limitations are circumvented by dividing into smaller polygons.
+  - **GeoAdmin API integration:** Precise data queries from the daily updated Swiss Building and Housing Register of the BFS.
+  - **Overture Maps Foundation query integration:** Precise data queries from the OSM / Overture Maps, monthly (?) updated places directory.
+  - **Result display:** Presentation of aggregated apartment/business data by address and street.
+  - **Export option:** Results can be displayed as a table and further processed.
 
-  ## Hauptmerkmale
-  - **Polygon-Zeichenfunktion:** Benutzer können Polygone auf einer interaktiven Karte zeichnen oder aus einem map.geo.admin.ch link generieren
-  - **Automatische Unterteilung grosser Polygone:** API-Limitierungen werden durch die Aufteilung in kleinere Polygone umgangen.
-  - **GeoAdmin API-Integration:** Präzise Datenabfragen aus dem täglich aktualisierten schweizerischen Gebäude- und Wohnungsregister des BFS.
-  - **Overture Maps Foundation Abfrage-Integration: :** Präzise Datenabfragen aus dem OSM / Overture Maps, monatlich (?) aktualisierten Places verzeichnis.
-  - **Ergebnisanzeige:** Darstellung der aggregierten Wohnungs/Geschäfstdaten nach Adressen und Strassen.
-  - **Exportoption:** Ergebnisse können als Tabelle angezeigt und weiterverarbeitet werden.
-
-  ## Anforderungen
-  ### Python-Bibliotheken
+  ## Requirements
+  ### Python libraries
   - `streamlit`
   - `requests`
   - `geopandas`
@@ -58,89 +56,87 @@
   - `streamlit_folium`
   - `duckdb`
 
-  Installieren Sie die benötigten Bibliotheken mit:
+  Install the required libraries with:
   ```bash
   pip install -r requirements.txt
   ```
 
-  ### Dateien
-  Das Projekt besteht aus zwei Hauptdateien:
-  1. **app.py**: Hauptanwendung für die interaktive Nutzung via streamlit.io [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
-  2. **madd_extract.py**: python Funktionen, wie sie in der Hauptanwendung verwendet werden.
-  3. **overture.py**: python Funktion um via DUCKDB auf overturemaps zuzugreifen.
+  ### Files
+  The project consists of three main files:
+  1. **app.py**: Main application for interactive use via streamlit.io [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
+  2. **madd_extract.py**: Python functions as used in the main application.
+  3. **overture.py**: Python function to access overturemaps via DUCKDB.
 
-  ## Funktionen
+  ## Functions
   ### app.py
-  - **Kartenanzeige mit Zeichentools:**
-    Interaktive Karte, die das Zeichnen von Polygonen erlaubt.
-  - **Polygon-Validierung:**
-    Warnung bei grossen Polygonen (>10 km² und >150 km²), die zu langen Ladezeiten führen können.
-  - **API-Abfrage:**
-    Automatisierte Abfragen mit Unterstützung zur Unterteilung grosser Polygone.
-  - **Ergebnisanzeige:**
-    - Gesamtanzahl der Wohnungen
-    - Details nach Adresse und Strasse
-  - **Progressbar:**
-    Zeigt den Fortschritt der Verarbeitung bei mehreren Subsets an.
+  - **Map display with drawing tools:**
+    Interactive map that allows drawing polygons.
+  - **Polygon validation:**
+    Warning for large polygons (>10 km² and >150 km²) that may lead to long loading times.
+  - **API query:**
+    Automated queries with support for subdividing large polygons.
+  - **Result display:**
+    - Total number of apartments
+    - Details by address and street
+  - **Progress bar:**
+    Shows the progress of processing multiple subsets.
 
   ### madd_extract.py
   - **split_polygon:**
-    Teilt ein grosses Polygon in kleinere Polygone basierend auf einer maximalen Fläche.
+    Splits a large polygon into smaller polygons based on a maximum area.
   - **query_geoadmin_with_polygon:**
-    Sendet API-Abfragen an GeoAdmin basierend auf einem gegebenen Polygon.
+    Sends API queries to GeoAdmin based on a given polygon.
   - **extract_wohnungen_and_counts:**
-    Aggregiert Wohnungsinformationen aus der API-Antwort.
+    Aggregates apartment information from the API response.
   - **create_map:**
-    Erstellt eine interaktive Karte mit Folium und Zeichenwerkzeugen.
+    Creates an interactive map with Folium and drawing tools.
 
   ### overture.py
   - **extract_freeform:**
-  Extrahiert 'freeform'-Felder aus einer Liste von Adresswörterbüchern oder einem JSON-String.
+    Extracts 'freeform' fields from a list of address dictionaries or a JSON string.
 
   - **clean_df:**
-  Bereinigt und transformiert einen DataFrame, indem bestimmte Spalten verarbeitet werden.
+    Cleans and transforms a DataFrame by processing certain columns.
 
   - **fetch_latest_release_date:**
-  Ruft das Veröffentlichungsdatum der neuesten Version von Overture Maps von der Website ab.
+    Retrieves the release date of the latest version of Overture Maps from the website.
 
-
-
-  ## Nutzung
-  ### Lokale Ausführung
-  1. Klonen Sie das Repository:
+  ## Usage
+  ### Local execution
+  1. Clone the repository:
     ```bash
     git clone https://github.com/davidoesch/wo-sind-briefkaesten.git
     ```
-  2. Wechseln Sie in das Verzeichnis:
+  2. Change to the directory:
     ```bash
     cd wo-sind-briefkaesten
     ```
-  3. Starten Sie die Streamlit-Anwendung:
+  3. Start the Streamlit application:
     ```bash
     streamlit run app.py
     ```
 
-  ### Interaktive Nutzung
+  ### Interactive use
 
-  website: [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
+  website: [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
-  1. Zeichnen Sie ein Polygon auf der Karte.
-  2. Klicken Sie auf den "Berechnen"-Button.
-  3. Sehen Sie sich die aggregierten Ergebnisse direkt in der App an.
+  1. Draw a polygon on the map.
+  2. Click the "Calculate" button.
+  3. View the aggregated results directly in the app.
 
-  ## Ergebnisse
-  - **Gesamtanzahl der Briefkästen:**
-    Anzahl der Wohnungen im gezeichneten Polygon.
-  - **Wohnungs/ Geschäftsdetails nach Adresse und Strasse:**
-    Tabellen mit sortierten Daten.
-  - **Warnungen bei API-Limits:**
-    Hinweise zur Verkleinerung der Polygone.
+  ## Results
+  - **Total number of mailboxes:**
+    Number of apartments in the drawn polygon.
+  - **Apartment/business details by address and street:**
+    Tables with sorted data.
+  - **Warnings for API limits:**
+    Notes on reducing the size of the polygons.
 
-  ## Beispiel
-  [Wieviele Briefkästen gibt es?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
+  ## Example
+  [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
-  ## Lizenz
-  © 2024 David Oesch. Dieses Projekt ist unter der [MIT-Lizenz](LICENSE.txt) lizenziert.
+  ## License
+  © 2024 David Oesch. This project is licensed under the [MIT License](LICENSE.txt).
 
-  ## Kontakt
-  Haben Sie Fragen oder Verbesserungsvorschläge? [David Oesch auf GitHub](https://github.com/davidoesch).
+  ## Contact
+  Do you have questions or suggestions for improvement? [David Oesch on GitHub](https://github.com/davidoesch).
