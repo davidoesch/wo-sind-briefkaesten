@@ -40,7 +40,7 @@
 
   ## Hauptmerkmale
   - **Polygon-Zeichenfunktion:** Benutzer können Polygone auf einer interaktiven Karte zeichnen oder aus einem map.geo.admin.ch link generieren
-  - **Automatische Unterteilung großer Polygone:** API-Limitierungen werden durch die Aufteilung in kleinere Polygone umgangen.
+  - **Automatische Unterteilung grosser Polygone:** API-Limitierungen werden durch die Aufteilung in kleinere Polygone umgangen.
   - **GeoAdmin API-Integration:** Präzise Datenabfragen aus dem täglich aktualisierten schweizerischen Gebäude- und Wohnungsregister des BFS.
   - **Overture Maps Foundation Abfrage-Integration: :** Präzise Datenabfragen aus dem OSM / Overture Maps, monatlich (?) aktualisierten Places verzeichnis.
   - **Ergebnisanzeige:** Darstellung der aggregierten Wohnungs/Geschäfstdaten nach Adressen und Strassen.
@@ -74,18 +74,18 @@
   - **Kartenanzeige mit Zeichentools:**
     Interaktive Karte, die das Zeichnen von Polygonen erlaubt.
   - **Polygon-Validierung:**
-    Warnung bei großen Polygonen (>10 km²), die zu langen Ladezeiten führen können.
+    Warnung bei grossen Polygonen (>10 km² und >150 km²), die zu langen Ladezeiten führen können.
   - **API-Abfrage:**
-    Automatisierte Abfragen mit Unterstützung zur Unterteilung großer Polygone.
+    Automatisierte Abfragen mit Unterstützung zur Unterteilung grosser Polygone.
   - **Ergebnisanzeige:**
     - Gesamtanzahl der Wohnungen
-    - Details nach Adresse und Straße
+    - Details nach Adresse und Strasse
   - **Progressbar:**
     Zeigt den Fortschritt der Verarbeitung bei mehreren Subsets an.
 
   ### madd_extract.py
   - **split_polygon:**
-    Teilt ein großes Polygon in kleinere Polygone basierend auf einer maximalen Fläche.
+    Teilt ein grosses Polygon in kleinere Polygone basierend auf einer maximalen Fläche.
   - **query_geoadmin_with_polygon:**
     Sendet API-Abfragen an GeoAdmin basierend auf einem gegebenen Polygon.
   - **extract_wohnungen_and_counts:**
@@ -131,7 +131,7 @@
   ## Ergebnisse
   - **Gesamtanzahl der Briefkästen:**
     Anzahl der Wohnungen im gezeichneten Polygon.
-  - **Wohnungs/ Geschäftsdetails nach Adresse und Straße:**
+  - **Wohnungs/ Geschäftsdetails nach Adresse und Strasse:**
     Tabellen mit sortierten Daten.
   - **Warnungen bei API-Limits:**
     Hinweise zur Verkleinerung der Polygone.
