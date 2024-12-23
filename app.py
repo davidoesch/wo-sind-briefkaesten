@@ -610,7 +610,7 @@ if st.button(t["button_calculate"]):
                     st.write(t["no_addresses_found"])
 
 
-            with st.expander(t["details_apartments_by_address"]):
+            with st.expander(t["details_apartments_by_street"]):
                 strassen_df = pd.DataFrame(
                     [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
                 )
