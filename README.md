@@ -2,7 +2,7 @@
 
   An interactive web application to estimate the total number of delivery addresses / mailboxes (Zustelladressen / Briefkästen )for a user-defined perimeter in Switzerland based on the number of apartments according to the [Federal Building and Housing Register (GWR) of the Federal Statistical Office BFS](https://www.bfs.admin.ch/bfs/de/home/register/gebaeude-wohnungsregister.html) and the number of businesses according to <em>places</em> from the [Overture Maps Foundation](https://overturemaps.org). This tool is ideal for target group analysis, e.g., for planning marketing measures such as flyer distribution in neighborhoods.
 
-  -> application website (DE): [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
+  -> application website : [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
   ## Basic assumption:
   ### Apartments
