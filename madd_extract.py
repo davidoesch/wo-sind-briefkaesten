@@ -1,5 +1,6 @@
 import requests
 import geopandas as gpd
+import pandas as pd
 import xml.etree.ElementTree as ET
 from shapely.geometry import Polygon, box
 from shapely.ops import split
@@ -13,8 +14,169 @@ import ast
 import requests
 import re
 from urllib.parse import urlparse, parse_qs
-
 from bs4 import BeautifulSoup
+
+global building_codes
+building_codes = {
+    1010: {"CODE": 1010, "KAT": "GKAT", "BESCHREIBUNG": "Provisorische Unterkunft"},
+    1020: {"CODE": 1020, "KAT": "GKAT", "BESCHREIBUNG": "Gebäude mit ausschliesslicher Wohnnutzung"},
+    1030: {"CODE": 1030, "KAT": "GKAT", "BESCHREIBUNG": "Andere Wohngebäude (Wohngebäude mit Nebennutzung)"},
+    1040: {"CODE": 1040, "KAT": "GKAT", "BESCHREIBUNG": "Gebäude mit teilweiser Wohnnutzung"},
+    1060: {"CODE": 1060, "KAT": "GKAT", "BESCHREIBUNG": "Gebäude ohne Wohnnutzung"},
+    1110: {"CODE": 1110, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude mit einer Wohnung"},
+    1121: {"CODE": 1121, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude mit zwei Wohnungen"},
+    1122: {"CODE": 1122, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude mit drei oder mehr Wohnungen"},
+    1130: {"CODE": 1130, "KAT": "GKLAS", "BESCHREIBUNG": "Wohngebäude für Gemeinschaften"},
+    1211: {"CODE": 1211, "KAT": "GKLAS", "BESCHREIBUNG": "Hotelgebäude"},
+    1212: {"CODE": 1212, "KAT": "GKLAS", "BESCHREIBUNG": "Andere Gebäude für kurzfristige Beherbergung"},
+    1220: {"CODE": 1220, "KAT": "GKLAS", "BESCHREIBUNG": "Bürogebäude"},
+    1230: {"CODE": 1230, "KAT": "GKLAS", "BESCHREIBUNG": "Gross-und Einzelhandelsgebäude"},
+    1231: {"CODE": 1231, "KAT": "GKLAS", "BESCHREIBUNG": "Restaurants und Bars in Gebäuden ohne Wohnnutzung"},
+    1241: {"CODE": 1241, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude des Verkehrs- und Nachrichtenwesens ohne Garagen"},
+    1242: {"CODE": 1242, "KAT": "GKLAS", "BESCHREIBUNG": "Garagengebäude"},
+    1251: {"CODE": 1251, "KAT": "GKLAS", "BESCHREIBUNG": "Industriegebäude"},
+    1261: {"CODE": 1261, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude für Kultur- und Freizeitzwecke"},
+    1262: {"CODE": 1262, "KAT": "GKLAS", "BESCHREIBUNG": "Museen und Bibliotheken"},
+    1263: {"CODE": 1263, "KAT": "GKLAS", "BESCHREIBUNG": "Schul- und Hochschulgebäude"},
+    1264: {"CODE": 1264, "KAT": "GKLAS", "BESCHREIBUNG": "Krankenhäuser und Facheinrichtungen des Gesundheitswesens"},
+    1275: {"CODE": 1275, "KAT": "GKLAS", "BESCHREIBUNG": "Andere Gebäude für die kollektive Unterkunft"},
+}
+
+def extract_overture(polygon):        # Initial setup
+        """
+        Extracts place names and addresses from Overture Maps data within a specified polygon.
+        This function connects to a DuckDB database, installs and loads necessary extensions,
+        fetches the latest release information from the Overture Maps GitHub repository, constructs
+        the parquet path using the latest release date, and performs a spatial query to extract
+        place names and addresses within the specified polygon. It checks foralready existing  possible addresses and categories from the global variable gwrgeschaefte_by_streetnr and adds them to the DataFrame. The function then aggregates the place names and addresses by flattened addresses and returns the number of frames (rows) in the resulting DataFrame, the DataFrame containing the extracted place names, categories, and flattened addresses, and a list of lists containing a flattened address and the count of places associated with that address.
+        Args:
+            polygon (shapely.geometry.Polygon): The polygon within which to extract place names and addresses.
+        Returns:
+            tuple: A tuple containing:
+                - num_frames (int): The number of frames (rows) in the resulting DataFrame.
+                - place_and_address_df (pandas.DataFrame): A DataFrame containing the extracted place names,
+                    categories, and flattened addresses.
+                - total_places_pro_adresse (list): A list of lists, where each inner list contains a flattened address
+                    and the count of places associated with that address.
+        """
+        con = db.connect()
+
+        # To perform spatial operations, the spatial extension is required.
+        # src - https://duckdb.org/docs/api/python/overview.html#loading-and-installing-extensions
+
+        con.install_extension("spatial")
+        con.load_extension("spatial")
+
+        # To load a Parquet file from S3, the httpfs extension is required.
+        # src - https://duckdb.org/docs/guides/import/s3_import.html
+
+        con.install_extension("httpfs")
+        con.load_extension("httpfs")
+
+        # Tell DuckDB which S3 region to find Overture's data bucket in
+        # src - https://github.com/OvertureMaps/data/blob/main/README.md#how-to-access-overture-maps-data
+        con.sql("SET s3_region='us-west-2'")
+
+        # Overture structure
+        # https://github.com/OvertureMaps/data/blob/main/README.md#how-to-access-overture-maps-data
+
+        # Fetch the latest release information from the Overture Maps GitHub repository
+        response = requests.get("https://docs.overturemaps.org/release/latest/")
+        html_content = response.text
+
+        # Use regular expression to find the release date in the title
+        match = re.search(r'data-rh=true>(\d{4}-\d{2}-\d{2}\.\d+)', html_content)
+        if match:
+            release_date = match.group(1)
+            print("Overture release date: "+ release_date)
+        else:
+            print("Release date not found, taking 2024-12-18.0")
+            release_date = "2024-12-18.0"
+
+        # Construct the parquet path using the latest release date
+        parquet_path = f"s3://overturemaps-us-west-2/release/{release_date}/theme=places/type=*/*"
+
+
+        query = f"""
+        SELECT
+            id,
+            names.primary AS primary_name,
+            json_extract_string(categories, 'primary') AS category,
+            json_extract_string(categories, 'alternate') AS category_alt,
+            addresses AS addresses,
+            ST_AsText(geometry) as geometry
+        FROM
+            read_parquet('{parquet_path}', filename=true, hive_partitioning=1)
+        WHERE
+            ST_Intersects(geometry, ST_GeomFromText('{polygon.wkt}'))
+        """
+
+
+        result_df = con.execute(query).fetchdf()
+
+        # explicitly close the connection
+        con.close()
+
+        # Extract place names and addresses
+        place_and_address_df = result_df[['primary_name', 'addresses','category','category_alt']].dropna()
+
+        # Apply the extract freeform function to the 'addresses' column
+        place_and_address_df['flattened_addresses'] = place_and_address_df['addresses'].apply(extract_freeform)
+
+        # Drop the original 'addresses' column for cleaner output (optional)
+        place_and_address_df = place_and_address_df.drop(columns=['addresses'])
+
+        # converting dict to list
+        place_and_address_df = clean_df(place_and_address_df, 'category_alt')
+
+
+        #check if the variable gwrgeschaefte_by_streetnr exists
+        if 'gwrgeschaefte_by_streetnr' in globals():
+            #convert gwrgechaeft_by_streetnr to a dataframe with geopandas
+            gwrgeschaefte_by_streetnr_df = pd.DataFrame(gwrgeschaefte_by_streetnr)
+
+            #add from gwrgeschaefte_by_streetnr_df the columns 'address', 'category' and 'category_alt' to place_and_address_df. Set the value of 'primary_name' to 'Unbekannt', use the cokumn 'address' as 'flattened_addresses', the column 'category' as 'category' and the column 'category_alt' as 'category_alt'
+            place_and_address_df_new = pd.concat([place_and_address_df, gwrgeschaefte_by_streetnr_df[['address', 'category', 'category_alt']]], ignore_index=True)
+
+            # Create a new DataFrame with the required columns and values
+            new_df = pd.DataFrame({
+                'primary_name': 'Unbekannt',
+                'flattened_addresses': gwrgeschaefte_by_streetnr_df['address'],
+                'category': gwrgeschaefte_by_streetnr_df['category'],
+                'category_alt': gwrgeschaefte_by_streetnr_df['category_alt']
+            })
+
+            # Filter out rows where 'flattened_addresses' are already present in place_and_address_df
+            new_df = new_df[~new_df['flattened_addresses'].isin(place_and_address_df['flattened_addresses'])]
+
+            # Concatenate the new DataFrame to place_and_address_df
+            place_and_address_df = pd.concat([place_and_address_df, new_df], ignore_index=True)
+
+
+        #print(place_and_address_df)
+        num_frames = len(place_and_address_df)
+        #print(f"Anzahl der Frames: {num_frames}")
+
+        #aggregate place_and_address_df by flattened_addresses
+        total_places_pro_adresse_df = place_and_address_df.groupby('flattened_addresses').size().reset_index(name='count')
+        total_places_pro_adresse_df =total_places_pro_adresse_df.rename(columns={'flattened_addresses': 'Adresse', 'count': 'Geschäfte'})
+
+        #sortiere total_places_pro_adresse_df nach 'Adresse' absteigend
+        total_places_pro_adresse_df = total_places_pro_adresse_df.sort_values(by='Geschäfte', ascending=False)
+
+        #ändere in place_and_address_df den Namen der Spalte 'flattened_addresses' in 'Adresse' und die Spalte 'category' in 'Kategorie' und 'category_alt' in 'Kategorie_Alternative' und 'primary_name' in 'Geschäft'
+        place_and_address_df = place_and_address_df.rename(columns={'flattened_addresses': 'Adresse', 'primary_name': 'Geschäft', 'category': 'Kategorie', 'category_alt': 'Kategorie_Alternative'})
+
+        #re-order: erste Spalte in place_and_address_df ist die Adresse, die zweite Spalte ist das Geschäft, die dritte Spalte ist die Kategorie und die vierte Spalte ist die Kategorie_Alternative
+        place_and_address_df = place_and_address_df[['Adresse', 'Geschäft', 'Kategorie', 'Kategorie_Alternative']]
+
+        #Sortiere place_and_address_df nach 'Adresse' absteigend
+        place_and_address_df = place_and_address_df.sort_values(by='Adresse', ascending=False)
+
+
+        #total_places_pro_adresse = total_places_pro_adresse_df.values.tolist()
+
+        return num_frames, place_and_address_df,total_places_pro_adresse_df,release_date
 
 def get_latest_release_date(repo_url):
     # Construct the releases page URL
@@ -246,9 +408,26 @@ def extract_wohnungen_and_counts(result):
             if ganzwhg == 0:
                 gkat = attributes.get('gkat')
                 gklas = attributes.get('gklas')
-                # Check if either gkat or gklas matches the specified values
-                if gkat in {1010, 1020, 1030, 1040,1060} or gklas in {1110,1121,1122,1130,1211,1212,1220,1230,1231,1241,1242,1251,1261,1262,1263,1264,1275}:
-                    ganzwhg = 1
+
+                # Check if either gkat or gklas matches the specified values in building_codes
+                if any(building_codes[code]["CODE"] == gkat for code in building_codes if "CODE" in building_codes[code]) or any(building_codes[code]["KAT"] == gklas for code in building_codes if "KAT" in building_codes[code]):
+
+                    #prüf ob der dict gwrgeschaefte_by_streetnr schon besteht, falls nihct setzte eine globale variable gwrgeschaefte_by_streetnr
+                    if 'gwrgeschaefte_by_streetnr' not in globals():
+                        global gwrgeschaefte_by_streetnr
+                        gwrgeschaefte_by_streetnr = []
+
+                    # Create a new record
+                    new_record = {
+                        'address': attributes.get('strname_deinr', "Unbekannt"),
+                        'category': building_codes.get(gkat, {}).get("BESCHREIBUNG", "Code not found"),
+                        'category_alt': building_codes.get(gklas, {}).get("BESCHREIBUNG", "Code not found")
+                    }
+
+                    # Append the new record to the list if category or category_alt is not "Code not found"
+                    if new_record['category_alt'] != "Code not found":
+                        gwrgeschaefte_by_streetnr.append(new_record)
+
 
             strnamenr = attributes.get('strname_deinr', "Unbekannt")
             strname = ", ".join(attributes.get('strname', "Unbekannt"))
@@ -280,6 +459,7 @@ if __name__ == "__main__":
     #kml_url = "https://s.geo.admin.ch/jpve0fg64vai" #köniz
     #kml_url = "https://s.geo.admin.ch/nct5odun6mkp"
     kml_url = "https://s.geo.admin.ch/aemkr12m23lk" #bumpliiz
+    #kml_url="https://s.geo.admin.ch/l2eyovbqgimd"#stadelhofen
     #kml_url = input("Bitte Link zur Zeichnung eingeben: ")
     # print(f"Link zur Zeichnung ist: {kml_url}")
 
@@ -335,87 +515,9 @@ if __name__ == "__main__":
     print(f"Gesamtanzahl Wohnungen im Polygon: {total_wohnungen}")
     print("-------------------------------------------------------")
 
-    # Initial setup
-    con = db.connect()
 
-    # To perform spatial operations, the spatial extension is required.
-    # src - https://duckdb.org/docs/api/python/overview.html#loading-and-installing-extensions
-
-    con.install_extension("spatial")
-    con.load_extension("spatial")
-
-    # To load a Parquet file from S3, the httpfs extension is required.
-    # src - https://duckdb.org/docs/guides/import/s3_import.html
-
-    con.install_extension("httpfs")
-    con.load_extension("httpfs")
-
-    # Tell DuckDB which S3 region to find Overture's data bucket in
-    # src - https://github.com/OvertureMaps/data/blob/main/README.md#how-to-access-overture-maps-data
-    con.sql("SET s3_region='us-west-2'")
-
-    # Overture structure
-    # https://github.com/OvertureMaps/data/blob/main/README.md#how-to-access-overture-maps-data
-
-    # Fetch the latest release information from the Overture Maps GitHub repository
-    response = requests.get("https://docs.overturemaps.org/release/latest/")
-    html_content = response.text
-
-    # Use regular expression to find the release date in the title
-    match = re.search(r'data-rh=true>(\d{4}-\d{2}-\d{2}\.\d+)', html_content)
-    if match:
-        release_date = match.group(1)
-        print(release_date)
-    else:
-        print("Release date not found")
-
-    # Construct the parquet path using the latest release date
-    parquet_path = f"s3://overturemaps-us-west-2/release/{release_date}/theme=places/type=*/*"
+    total_geschaefte, place_and_address_df, total_places_pro_adresse_df, release_date = extract_overture(polygon)
+    print(f"Anzahl der Geschäfte: {total_geschaefte}")
 
 
-    query = f"""
-    SELECT
-        id,
-        names.primary AS primary_name,
-        json_extract_string(categories, 'primary') AS category,
-        json_extract_string(categories, 'alternate') AS category_alt,
-        addresses AS addresses,
-        ST_AsText(geometry) as geometry
-    FROM
-        read_parquet('{parquet_path}', filename=true, hive_partitioning=1)
-    WHERE
-        ST_Intersects(geometry, ST_GeomFromText('{polygon.wkt}'))
-    """
-
-
-    result_df = con.execute(query).fetchdf()
-
-    # explicitly close the connection
-    con.close()
-
-    # Extract place names and addresses
-    place_and_address_df = result_df[['primary_name', 'addresses','category','category_alt']].dropna()
-
-    # Apply the extract freeform function to the 'addresses' column
-    place_and_address_df['flattened_addresses'] = place_and_address_df['addresses'].apply(extract_freeform)
-
-    # Drop the original 'addresses' column for cleaner output (optional)
-    place_and_address_df = place_and_address_df.drop(columns=['addresses'])
-
-    # converting dict to list
-    place_and_address_df = clean_df(place_and_address_df, 'category_alt')
-
-    # Display the resulting DataFrame
-    print(place_and_address_df)
-    num_frames = len(place_and_address_df)
-    print(f"Anzahl der Frames: {num_frames}")
-
-    #aggregate place_and_address_df by flattened_addresses
-    total_places_pro_adresse_df = place_and_address_df.groupby('flattened_addresses').size().reset_index(name='count')
-
-    total_places_pro_adresse = total_places_pro_adresse_df.values.tolist()
-
-
-
-    breakpoint()
     print("ende")

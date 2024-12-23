@@ -39,6 +39,32 @@ import requests
 import re
 from bs4 import BeautifulSoup
 
+global building_codes
+building_codes = {
+    1010: {"CODE": 1010, "KAT": "GKAT", "BESCHREIBUNG": "Provisorische Unterkunft"},
+    1020: {"CODE": 1020, "KAT": "GKAT", "BESCHREIBUNG": "Gebäude mit ausschliesslicher Wohnnutzung"},
+    1030: {"CODE": 1030, "KAT": "GKAT", "BESCHREIBUNG": "Andere Wohngebäude (Wohngebäude mit Nebennutzung)"},
+    1040: {"CODE": 1040, "KAT": "GKAT", "BESCHREIBUNG": "Gebäude mit teilweiser Wohnnutzung"},
+    1060: {"CODE": 1060, "KAT": "GKAT", "BESCHREIBUNG": "Gebäude ohne Wohnnutzung"},
+    1110: {"CODE": 1110, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude mit einer Wohnung"},
+    1121: {"CODE": 1121, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude mit zwei Wohnungen"},
+    1122: {"CODE": 1122, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude mit drei oder mehr Wohnungen"},
+    1130: {"CODE": 1130, "KAT": "GKLAS", "BESCHREIBUNG": "Wohngebäude für Gemeinschaften"},
+    1211: {"CODE": 1211, "KAT": "GKLAS", "BESCHREIBUNG": "Hotelgebäude"},
+    1212: {"CODE": 1212, "KAT": "GKLAS", "BESCHREIBUNG": "Andere Gebäude für kurzfristige Beherbergung"},
+    1220: {"CODE": 1220, "KAT": "GKLAS", "BESCHREIBUNG": "Bürogebäude"},
+    1230: {"CODE": 1230, "KAT": "GKLAS", "BESCHREIBUNG": "Gross-und Einzelhandelsgebäude"},
+    1231: {"CODE": 1231, "KAT": "GKLAS", "BESCHREIBUNG": "Restaurants und Bars in Gebäuden ohne Wohnnutzung"},
+    1241: {"CODE": 1241, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude des Verkehrs- und Nachrichtenwesens ohne Garagen"},
+    1242: {"CODE": 1242, "KAT": "GKLAS", "BESCHREIBUNG": "Garagengebäude"},
+    1251: {"CODE": 1251, "KAT": "GKLAS", "BESCHREIBUNG": "Industriegebäude"},
+    1261: {"CODE": 1261, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude für Kultur- und Freizeitzwecke"},
+    1262: {"CODE": 1262, "KAT": "GKLAS", "BESCHREIBUNG": "Museen und Bibliotheken"},
+    1263: {"CODE": 1263, "KAT": "GKLAS", "BESCHREIBUNG": "Schul- und Hochschulgebäude"},
+    1264: {"CODE": 1264, "KAT": "GKLAS", "BESCHREIBUNG": "Krankenhäuser und Facheinrichtungen des Gesundheitswesens"},
+    1275: {"CODE": 1275, "KAT": "GKLAS", "BESCHREIBUNG": "Andere Gebäude für die kollektive Unterkunft"},
+}
+
 def get_latest_release_date(repo_url):
     """
     Fetches the latest release version and release date from a GitHub repository.
@@ -251,9 +277,25 @@ def extract_wohnungen_and_counts(result):
 
                 gkat = attributes.get('gkat')
                 gklas = attributes.get('gklas')
-                # Check if either gkat or gklas matches the specified values
-                if gkat in {1010, 1020, 1030, 1040,1060} or gklas in {1110,1121,1122,1130,1211,1212,1220,1230,1231,1241,1242,1251,1261,1262,1263,1264,1275}:
-                    ganzwhg = 1
+                
+                # Check if either gkat or gklas matches the specified values in building_codes
+                if any(building_codes[code]["CODE"] == gkat for code in building_codes if "CODE" in building_codes[code]) or any(building_codes[code]["KAT"] == gklas for code in building_codes if "KAT" in building_codes[code]):
+
+                    #prüf ob der dict gwrgeschaefte_by_streetnr schon besteht, falls nihct setzte eine globale variable gwrgeschaefte_by_streetnr
+                    if 'gwrgeschaefte_by_streetnr' not in globals():
+                        global gwrgeschaefte_by_streetnr
+                        gwrgeschaefte_by_streetnr = []
+
+                    # Create a new record
+                    new_record = {
+                        'address': attributes.get('strname_deinr', "Unbekannt"),
+                        'category': building_codes.get(gkat, {}).get("BESCHREIBUNG", "Code not found"),
+                        'category_alt': building_codes.get(gklas, {}).get("BESCHREIBUNG", "Code not found")
+                    }
+
+                    # Append the new record to the list if category or category_alt is not "Code not found"
+                    if new_record['category_alt'] != "Code not found":
+                        gwrgeschaefte_by_streetnr.append(new_record)
 
             strnamenr = attributes.get('strname_deinr', "Unbekannt")
             strname = ", ".join(attributes.get('strname', "Unbekannt"))
@@ -322,7 +364,7 @@ def extract_overture(polygon):        # Initial setup
         This function connects to a DuckDB database, installs and loads necessary extensions,
         fetches the latest release information from the Overture Maps GitHub repository, constructs
         the parquet path using the latest release date, and performs a spatial query to extract
-        place names and addresses within the specified polygon.
+        place names and addresses within the specified polygon. It checks foralready existing  possible addresses and categories from the global variable gwrgeschaefte_by_streetnr and adds them to the DataFrame. The function then aggregates the place names and addresses by flattened addresses and returns the number of frames (rows) in the resulting DataFrame, the DataFrame containing the extracted place names, categories, and flattened addresses, and a list of lists containing a flattened address and the count of places associated with that address.
         Args:
             polygon (shapely.geometry.Polygon): The polygon within which to extract place names and addresses.
         Returns:
@@ -403,7 +445,27 @@ def extract_overture(polygon):        # Initial setup
         # converting dict to list
         place_and_address_df = clean_df(place_and_address_df, 'category_alt')
 
-        # Display the resulting DataFrame
+
+        #check if the variable gwrgeschaefte_by_streetnr exists
+        if 'gwrgeschaefte_by_streetnr' in globals():
+            #convert gwrgechaeft_by_streetnr to a dataframe with geopandas
+            gwrgeschaefte_by_streetnr_df = pd.DataFrame(gwrgeschaefte_by_streetnr)
+
+            # Create a new DataFrame with the required columns and values
+            new_df = pd.DataFrame({
+                'primary_name': 'Unbekannt',
+                'flattened_addresses': gwrgeschaefte_by_streetnr_df['address'],
+                'category': gwrgeschaefte_by_streetnr_df['category'],
+                'category_alt': gwrgeschaefte_by_streetnr_df['category_alt']
+            })
+
+            # Filter out rows where 'flattened_addresses' are already present in place_and_address_df
+            new_df = new_df[~new_df['flattened_addresses'].isin(place_and_address_df['flattened_addresses'])]
+
+            # Concatenate the new DataFrame to place_and_address_df
+            place_and_address_df = pd.concat([place_and_address_df, new_df], ignore_index=True)
+
+
         #print(place_and_address_df)
         num_frames = len(place_and_address_df)
         #print(f"Anzahl der Frames: {num_frames}")
