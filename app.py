@@ -622,7 +622,7 @@ if st.button(t["button_calculate"]):
 
 
             with st.expander(t["details_addresses"]):
-                st.write(f"{t['total_addresses']}: {total_adressen}")
+                st.write(f"{t['total_addresses']} {total_adressen}")
 
             #Tabelle mit total_places_pro_adresse anzeigen
             with st.expander(t["details_businesses_by_address"]):
