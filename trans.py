@@ -128,7 +128,7 @@ You can quickly estimate the number of mailboxes in an area. Simply draw a polyg
         "spinner_text": "Reading businesses (takes about 1 min)...",
         "mailboxes_header": "Mailboxes",
         "mailboxes_explanation_1": "Corresponds to the sum of [apartments](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#apartments) ",
-        "mailboxes_explanation_1": " and the sum of [businesses](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) ",
+        "mailboxes_explanation_2": " and the sum of [businesses](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) ",
         "adresse": "Addresses",
         "apartments": "Apartments",
         "businesses": "Businesses",
