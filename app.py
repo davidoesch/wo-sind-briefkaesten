@@ -595,8 +595,8 @@ if st.button(t["button_calculate"]):
             # Briefkästen direkt anzeigen
             total_briefkaesten = total_wohnungen + total_geschaefte
             st.subheader(f"{t['mailboxes_header']}: {total_briefkaesten}")
-            st.markdown(f"{t['mailboxes_explanation']}")
-            st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#apartments) {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) {total_geschaefte} im Polygon")
+            st.markdown(f"{t['mailboxes_explanation_1']} {total_wohnungen} {t['mailboxes_explanation_2']} {total_geschaefte}")
+        
 
             # Details als Tabellen anzeigen
             with st.expander(t["details_apartments_by_address"]):
