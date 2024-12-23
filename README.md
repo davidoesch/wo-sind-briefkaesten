@@ -4,6 +4,8 @@
 
   -> application website : [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
+  ![Demo of the application](images/demo.gif)
+
   ## Basic assumption:
   ### Apartments
   Assumption: Each apartment 'ganzwhg' according to [Feature Catalog 4.2 of the GWR](https://www.housing-stat.ch/de/help/42.html) also has a mailbox as a delivery address.
