@@ -33,7 +33,6 @@ building_codes = {
     1230: {"CODE": 1230, "KAT": "GKLAS", "BESCHREIBUNG": "Gross-und Einzelhandelsgebäude"},
     1231: {"CODE": 1231, "KAT": "GKLAS", "BESCHREIBUNG": "Restaurants und Bars in Gebäuden ohne Wohnnutzung"},
     1241: {"CODE": 1241, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude des Verkehrs- und Nachrichtenwesens ohne Garagen"},
-    1242: {"CODE": 1242, "KAT": "GKLAS", "BESCHREIBUNG": "Garagengebäude"},
     1251: {"CODE": 1251, "KAT": "GKLAS", "BESCHREIBUNG": "Industriegebäude"},
     1261: {"CODE": 1261, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude für Kultur- und Freizeitzwecke"},
     1262: {"CODE": 1262, "KAT": "GKLAS", "BESCHREIBUNG": "Museen und Bibliotheken"},
@@ -131,7 +130,7 @@ def extract_overture(polygon):        # Initial setup
 
 
         #check if the variable gwrgeschaefte_by_streetnr exists
-        if 'gwrgeschaefte_by_streetnr' in globals():
+        if 'gwrgeschaefte_by_streetnr' in globals() and len(gwrgeschaefte_by_streetnr) !=0:
             #convert gwrgechaeft_by_streetnr to a dataframe with geopandas
             gwrgeschaefte_by_streetnr_df = pd.DataFrame(gwrgeschaefte_by_streetnr)
 
@@ -458,7 +457,8 @@ if __name__ == "__main__":
     #kml_url = "https://s.geo.admin.ch/p56ijeogsuta" #SChliern gross
     #kml_url = "https://s.geo.admin.ch/jpve0fg64vai" #köniz
     #kml_url = "https://s.geo.admin.ch/nct5odun6mkp"
-    kml_url = "https://s.geo.admin.ch/aemkr12m23lk" #bumpliiz
+    #kml_url = "https://s.geo.admin.ch/aemkr12m23lk" #bumpliiz
+    kml_url = "https://s.geo.admin.ch/j8mzmz9oou1n" #sterinhlzli
     #kml_url="https://s.geo.admin.ch/l2eyovbqgimd"#stadelhofen
     #kml_url = input("Bitte Link zur Zeichnung eingeben: ")
     # print(f"Link zur Zeichnung ist: {kml_url}")
@@ -517,7 +517,9 @@ if __name__ == "__main__":
 
 
     total_geschaefte, place_and_address_df, total_places_pro_adresse_df, release_date = extract_overture(polygon)
-    print(f"Anzahl der Geschäfte: {total_geschaefte}")
+    print("-------------------------------------------------------")
+    print(f"Anzahl der Geschäfte im Polygon: {total_geschaefte}")
+    print("-------------------------------------------------------")
 
 
     print("ende")

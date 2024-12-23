@@ -28,7 +28,6 @@
   | 1230 | GKLAS | Gross-und Einzelhandelsgebäude                            |
   | 1231 | GKLAS | Restaurants und Bars in Gebäuden ohne Wohnnutzung         |
   | 1241 | GKLAS | Gebäude des Verkehrs- und Nachrichtenwesens ohne Garagen  |
-  | 1242 | GKLAS | Garagengebäude                                            |
   | 1251 | GKLAS | Industriegebäude                                          |
   | 1261 | GKLAS | Gebäude für Kultur- und Freizeitzwecke                    |
   | 1262 | GKLAS | Museen und Bibliotheken                                   |

@@ -1,5 +1,5 @@
 """
-Breifkästen  Query Tool
+Briefkästen  Query Tool
 
 Diese Streamlit-Anwendung ermöglicht die Berechnung der Gesamtanzahl von Wohnungen innerhalb eines benutzerdefinierten Polygons auf einer Karte.
 Benutzer können Polygone zeichnen, die durch Unterteilung in kleinere Polygone verarbeitet werden, um API-Limits von 200 Adressen einzuhalten.
@@ -39,6 +39,153 @@ import requests
 import re
 from bs4 import BeautifulSoup
 
+# Define translations
+translations = {
+    "DE": {
+        "page_title": "Briefkasten",
+        "page_icon": "📮",
+        "title": "Wieviele Briefkästen gibt es?",
+        "description": """
+Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet abschätzen.
+Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie:
+1. **Zeichnen Sie ein Gebiet auf der Karte ein (max 10km2).**
+2. **Klicken Sie auf *Berechnen*.**
+3. **Erhalten Sie die Anzahl der Zustelladressen.**
+        """,
+
+        "button_calculate": "Berechnen",
+        "warning_draw_polygon": "Bitte zeichnen Sie zuerst ein Polygon auf der Karte.",
+        "error_large_polygon": "Das gezeichnete Polygon ist grösser als 150 km². Bitte zeichnen Sie ein kleineres Polygon.",
+        "warning_large_polygon": "Das gezeichnete Polygon ist grösser als 10 km². Die Berechnung kann sehr lange dauern und möglicherweise aufgrund von API-Limitierungen von geo.admin.ch abbrechen.",
+        "progress_text": "Wohnungen: subset noch auszulesen: ",
+        "progress_complete": "Auslesen Wohnungen abgeschlossen",
+        "spinner_text": "Auslesen Geschäfte (dauert ca 1 min)...",
+        "mailboxes_header": "Briefkästen",
+        "mailboxes_explanation": "Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#apartments) {total_wohnungen}   und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) {total_geschaefte}  im Polygon",
+        "adresse":"Adresse",
+        "apartments": "Appartements",
+        "businesses": "Entreprises",
+        "details_apartments_by_address": "Details: Wohnungen nach Adressen",
+        "details_apartments_by_street": "Details: Wohnungen nach Strassen",
+        "details_addresses": "Details: Adressen",
+        "details_businesses_by_address": "Details: Geschäfte nach Adressen",
+        "details_businesses": "Details: Geschäfte",
+        "no_addresses_found": "Keine Adressen gefunden.",
+        "no_streets_found": "Keine Strassen gefunden.",
+        "total_addresses": "Gesamtanzahl Adressen im Polygon: ",
+        "no_businesses_found": "Keine Geschäfte gefunden.",
+        "footer_text": "🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch, [Overture Maps Foundation](https://overturemaps.org), Overture  Release ",
+        "footer_link": "Mehr infos und :star: unter [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
+    },
+    "FR": {
+        "page_title": "Boîte aux lettres",
+        "page_icon": "📮",
+        "title": "Combien de boîtes aux lettres y a-t-il ?",
+        "description": """
+Vous pouvez rapidement estimer le nombre de boîtes aux lettres dans une zone. Dessinez simplement un polygone sur la carte, et nous analysons les données pour vous :
+
+1. **Dessinez une zone sur la carte (max 10km2).**
+2. **Cliquez sur *Calculer*.**
+3. **Obtenez le nombre d'adresses de livraison.**
+        """,
+        "button_calculate": "Calculer",
+        "warning_draw_polygon": "Veuillez d'abord dessiner un polygone sur la carte.",
+        "error_large_polygon": "Le polygone dessiné est plus grand que 150 km². Veuillez dessiner un polygone plus petit.",
+        "warning_large_polygon": "Le polygone dessiné est plus grand que 10 km². Le calcul peut prendre beaucoup de temps et peut s'arrêter en raison des limitations de l'API de geo.admin.ch.",
+        "progress_text": "Logements : sous-ensembles restants à lire : ",
+        "progress_complete": "Lecture des logements terminée",
+        "spinner_text": "Lecture des entreprises (prend environ 1 min)...",
+        "mailboxes_header": "Boîtes aux lettres : ",
+        "mailboxes_explanation": "Correspond à la somme des [logements](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#apartments) {total_wohnungen}  et de la somme des [entreprises](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) {total_geschaefte} dans le polygone",
+        "adresse":"Adresses",
+        "apartments": "Appartements",
+        "businesses": "Entreprises",
+        "details_apartments_by_address": "Détails : Logements par adresse",
+        "details_apartments_by_street": "Détails : Logements par rue",
+        "details_addresses": "Détails : Adresses",
+        "details_businesses_by_address": "Détails : Entreprises par adresse",
+        "details_businesses": "Détails : Entreprises",
+        "no_addresses_found": "Aucune adresse trouvée.",
+        "no_streets_found": "Aucune rue trouvée.",
+        "total_addresses": "Nombre total d'adresses dans le polygone : ",        "no_businesses_found": "Aucune entreprise trouvée.",
+        "footer_text": "🏠 **Analyse des boîtes aux lettres résidentielles** © 2024 David Oesch, [Overture Maps Foundation](https://overturemaps.org), Version Overture ",
+        "footer_link": "Plus d'infos et :star: sur [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
+    },
+    "IT": {
+        "page_title": "Cassetta postale",
+        "page_icon": "📮",
+        "title": "Quante cassette postali ci sono?",
+        "description": """
+Puoi stimare rapidamente il numero di cassette postali in un'area. Disegna semplicemente un poligono sulla mappa e analizzeremo i dati per te:
+
+1. **Disegna un'area sulla mappa (max 10km2).**
+2. **Fai clic su *Calcola*.**
+3. **Ottieni il numero di indirizzi di consegna.**
+        """,
+        "button_calculate": "Calcola",
+        "warning_draw_polygon": "Per favore, disegna prima un poligono sulla mappa.",
+        "error_large_polygon": "Il poligono disegnato è più grande di 150 km². Per favore, disegna un poligono più piccolo.",
+        "warning_large_polygon": "Il poligono disegnato è più grande di 10 km². Il calcolo potrebbe richiedere molto tempo e potrebbe interrompersi a causa delle limitazioni dell'API di geo.admin.ch.",
+        "progress_text": "Abitazioni: sottoinsiemi ancora da leggere: ",
+        "progress_complete": "Lettura delle abitazioni completata",
+        "spinner_text": "Lettura delle attività commerciali (richiede circa 1 min)...",
+        "mailboxes_header": "Cassette postali: ",
+        "mailboxes_explanation": "Corrisponde alla somma delle [abitazioni](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#apartments) {total_wohnungen}  e alla somma delle [attività commerciali](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) {total_geschaefte} nel poligono",
+        "adresse": "Indirizzi",
+        "apartments": "Appartamenti",
+        "businesses": "Imprese",
+        "details_apartments_by_address": "Dettagli: Abitazioni per indirizzo",
+        "details_apartments_by_street": "Dettagli: Abitazioni per strada",
+        "details_addresses": "Dettagli: Indirizzi",
+        "details_businesses_by_address": "Dettagli: Attività commerciali per indirizzo",
+        "details_businesses": "Dettagli: Attività commerciali",
+        "no_addresses_found": "Nessun indirizzo trovato.",
+        "no_streets_found": "Nessuna strada trovata.",
+        "total_addresses": "Numero totale di indirizzi nel poligono: ",
+        "no_businesses_found": "Nessuna attività commerciale trovata.",
+        "footer_text": "🏠 **Analisi delle cassette postali residenziali** © 2024 David Oesch, [Overture Maps Foundation](https://overturemaps.org), Versione Overture ",
+        "footer_link": "Maggiori informazioni e :star: su [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
+    },
+    "EN": {
+        "page_title": "Mailbox",
+        "page_icon": "📮",
+        "title": "How many mailboxes are there?",
+        "description": """
+You can quickly estimate the number of mailboxes in an area. Simply draw a polygon on the map, and we'll analyze the data for you:
+
+1. **Draw an area on the map (max 10km2).**
+2. **Click on *Calculate*.**
+3. **Get the number of delivery addresses.**
+        """,
+        "button_calculate": "Calculate",
+        "warning_draw_polygon": "Please draw a polygon on the map first.",
+        "error_large_polygon": "The drawn polygon is larger than 150 km². Please draw a smaller polygon.",
+        "warning_large_polygon": "The drawn polygon is larger than 10 km². The calculation may take a very long time and might be interrupted due to API limitations from geo.admin.ch.",
+        "progress_text": "Apartments: subsets left to read: ",
+        "progress_complete": "Reading apartments completed",
+        "spinner_text": "Reading businesses (takes about 1 min)...",
+        "mailboxes_header": "Mailboxes: ",
+        "mailboxes_explanation": "Corresponds to the sum of [apartments](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#apartments) {total_wohnungen} and the sum of [businesses](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) {total_geschaefte} in the polygon",
+        "adresse": "Addresses",
+        "apartments": "Apartments",
+        "businesses": "Businesses",
+        "details_apartments_by_address": "Details: Apartments by address",
+        "details_apartments_by_street": "Details: Apartments by street",
+        "details_addresses": "Details: Addresses",
+        "details_businesses_by_address": "Details: Businesses by address",
+        "details_businesses": "Details: Businesses",
+        "no_addresses_found": "No addresses found.",
+        "no_streets_found": "No streets found.",
+        "total_addresses": "Total number of addresses in the polygon: ",
+        "no_businesses_found": "No businesses found.",
+        "footer_text": "🏠 **Residential Mailbox Analysis** © 2024 David Oesch, [Overture Maps Foundation](https://overturemaps.org), Overture Release ",
+        "footer_link": "More info and :star: at [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
+    }
+}
+
+
+
+
 global building_codes
 building_codes = {
     1010: {"CODE": 1010, "KAT": "GKAT", "BESCHREIBUNG": "Provisorische Unterkunft"},
@@ -56,7 +203,6 @@ building_codes = {
     1230: {"CODE": 1230, "KAT": "GKLAS", "BESCHREIBUNG": "Gross-und Einzelhandelsgebäude"},
     1231: {"CODE": 1231, "KAT": "GKLAS", "BESCHREIBUNG": "Restaurants und Bars in Gebäuden ohne Wohnnutzung"},
     1241: {"CODE": 1241, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude des Verkehrs- und Nachrichtenwesens ohne Garagen"},
-    1242: {"CODE": 1242, "KAT": "GKLAS", "BESCHREIBUNG": "Garagengebäude"},
     1251: {"CODE": 1251, "KAT": "GKLAS", "BESCHREIBUNG": "Industriegebäude"},
     1261: {"CODE": 1261, "KAT": "GKLAS", "BESCHREIBUNG": "Gebäude für Kultur- und Freizeitzwecke"},
     1262: {"CODE": 1262, "KAT": "GKLAS", "BESCHREIBUNG": "Museen und Bibliotheken"},
@@ -277,7 +423,7 @@ def extract_wohnungen_and_counts(result):
 
                 gkat = attributes.get('gkat')
                 gklas = attributes.get('gklas')
-                
+
                 # Check if either gkat or gklas matches the specified values in building_codes
                 if any(building_codes[code]["CODE"] == gkat for code in building_codes if "CODE" in building_codes[code]) or any(building_codes[code]["KAT"] == gklas for code in building_codes if "KAT" in building_codes[code]):
 
@@ -447,7 +593,7 @@ def extract_overture(polygon):        # Initial setup
 
 
         #check if the variable gwrgeschaefte_by_streetnr exists
-        if 'gwrgeschaefte_by_streetnr' in globals():
+        if 'gwrgeschaefte_by_streetnr' in globals() and len(gwrgeschaefte_by_streetnr) !=0:
             #convert gwrgechaeft_by_streetnr to a dataframe with geopandas
             gwrgeschaefte_by_streetnr_df = pd.DataFrame(gwrgeschaefte_by_streetnr)
 
@@ -498,24 +644,31 @@ release_date = "-"
 gh_release= "-"
 gh_date= "-"
 
+# Predefine translations
+
+
+# Set default language
+default_lang = "DE"
+t = translations[default_lang]
+
+# Set page configuration
 st.set_page_config(
-    page_title="Briefkasten",
-    page_icon="📮",
+    page_title=t["page_title"],  # Dynamic title based on the selected language
+    page_icon=t["page_icon"],   # Dynamic icon based on the selected language
+    layout="wide",              # Optional: Use "centered" or "wide" layouts
+    initial_sidebar_state="expanded"  # Optional: Expand or collapse the sidebar
 )
-st.title("Wieviele Briefkästen gibt es ?")
-st.markdown("""
-Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet abschätzen. Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie:
+# Select language
+lang = st.sidebar.selectbox("Select Language", ["DE", "FR", "IT", "EN"])
+t = translations[lang]
 
-1. **Zeichnen Sie ein Gebiet auf der Karte ein (max 10km2).**
-2. **Klicken Sie auf *Berechnen*.**
-3. **Erhalten Sie die Anzahl der Zustelladressen.**
-
-""")
+st.title(t["title"])
+st.markdown(t["description"])
 
 m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
 output = st_folium(m, width=700, height=500)
 
-if st.button("Berechnen", key="calculate_button"):
+if st.button(t["button_calculate"]):
     if output["last_active_drawing"]:
         drawn_polygon = output["last_active_drawing"]["geometry"]["coordinates"][0]
         polygon = Polygon(drawn_polygon)
@@ -523,10 +676,10 @@ if st.button("Berechnen", key="calculate_button"):
 
         # Wenn polygon.area > 0.015, dann wird die Berechnung nihct gestartet und der nutzer aufgefordert ein kleineres Polygon zu zeichnen (max 150km2)
         if polygon.area > 0.015:
-            st.error("Das gezeichnete Polygon ist grösser als 150 km². Bitte zeichnen Sie ein kleineres Polygon.")
+            st.error(t["error_large_polygon"])
         else:
             if polygon.area > 0.001:  # 0.001 entspricht ungefähr 10 km²
-                st.warning("Das gezeichnete Polygon ist grösser als 10 km². Die Berechnung kann sehr lange dauern und möglicherweise aufgrund von API-Limitierungen von geo.admin.ch abbrechen.")
+                st.warning(t["warning_large_polygon"])
 
             # Use the drawn polygon for calculations
             max_area = 0.000005
@@ -542,7 +695,7 @@ if st.button("Berechnen", key="calculate_button"):
 
             # Iteriere über Subsets mit Countdown
             for i, sub_polygon in enumerate(sub_polygons):
-                progress_text.text(f"Wohnungen: subset noch auszulesen: {len(sub_polygons) - i}")
+                progress_text.text(f"{t['progress_text']} {len(sub_polygons) - i}")
                 result = query_geoadmin_with_polygon(sub_polygon)
                 if result:
                     sub_total_wohnungen, sub_wohnungen_by_streetnr, sub_wohnungen_by_street = extract_wohnungen_and_counts(result)
@@ -552,21 +705,22 @@ if st.button("Berechnen", key="calculate_button"):
                     for street, count in sub_wohnungen_by_street.items():
                         aggregated_wohnungen_by_street[street] += count
                 progress_bar.progress((i + 1) / len(sub_polygons))
-            progress_text.text("Auslesen Wohnungen abgeschlossen")
+            progress_text.text(t["progress_complete"])
 
             # Geschäfte extraktion
-            with st.spinner('Auslesen Geschäfte (dauert ca 1 min)...'):
+            with st.spinner(t['spinner_text']):
                 total_geschaefte, place_and_address_df, total_places_pro_adresse_df, release_date = extract_overture(polygon)
             print(f"Anzahl der Geschäfte: {total_geschaefte}")
 
 
             # Briefkästen direkt anzeigen
             total_briefkaesten = total_wohnungen + total_geschaefte
-            st.subheader(f"Briefkästen: {total_briefkaesten}")
+            st.subheader(f"{t['mailboxes_header']}: {total_briefkaesten}")
+            st.markdown(f"{t['mailboxes_explanation']}")
             st.markdown(f"Entspricht der Summe der [Wohnungen](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#apartments) {total_wohnungen}  und der Summe der [Geschäfte](https://github.com/davidoesch/wo-sind-briefkaesten/tree/master?tab=readme-ov-file#businesses) {total_geschaefte} im Polygon")
 
             # Details als Tabellen anzeigen
-            with st.expander("Details: Wohnungen nach Adressen"):
+            with st.expander(t["details_apartments_by_address"]):
                 adressen_df = pd.DataFrame(
                     [{"Adresse": adr, "Wohnungen": count} for adr, count in aggregated_wohnungen_by_streetnr.items()]
                 )
@@ -574,10 +728,10 @@ if st.button("Berechnen", key="calculate_button"):
                     adressen_df_sorted = adressen_df.sort_values("Adresse")
                     st.write(adressen_df_sorted)
                 else:
-                    st.write("Keine Adressen gefunden.")
+                    st.write(t["no_addresses_found"])
 
 
-            with st.expander("Details: Wohnungen nach Strassen"):
+            with st.expander(t["details_apartments_by_address"]):
                 strassen_df = pd.DataFrame(
                     [{"Strasse": street, "Wohnungen": count} for street, count in aggregated_wohnungen_by_street.items()]
                 )
@@ -585,29 +739,29 @@ if st.button("Berechnen", key="calculate_button"):
                     strassen_df_sorted = strassen_df.sort_values("Strasse")
                     st.write(strassen_df_sorted)
                 else:
-                    st.write("Keine Strassen gefunden.")
+                    st.write(t["no_streets_found"])
 
 
-            with st.expander("Details: Adressen"):
-                st.write(f"Gesamtanzahl Adressen im Polygon: {total_adressen}")
+            with st.expander(t["details_addresses"]):
+                st.write(f"{t['total_addresses']}: {total_adressen}")
 
             #Tabelle mit total_places_pro_adresse anzeigen
-            with st.expander("Details: Geschäfte nach Adressen"):
+            with st.expander(t["details_businesses_by_address"]):
                 if not total_places_pro_adresse_df.empty:
                     st.write(total_places_pro_adresse_df)
                 else:
-                    st.write("Keine Geschäfte gefunden.")
+                    st.write(t["no_businesses_found"])
 
             # Tabelle mit place_and_address_df anzeigen
-            with st.expander("Details: Geschäfte"):
+            with st.expander(t["details_businesses"]):
                 if not place_and_address_df.empty:
                     st.write(place_and_address_df)
                 else:
-                    st.write("Keine Geschäfte gefunden.")
+                    st.write(t["no_businesses_found"])
 
 
 else:
-    st.warning("Bitte zeichnen Sie zuerst ein Polygon auf der Karte.")
+    st.warning(t["warning_draw_polygon"])
 
 st.write("")
 st.write("")
@@ -616,9 +770,5 @@ st.write("")
 gh_release,gh_date=get_latest_release_date("https://github.com/davidoesch/wo-sind-briefkaesten/")
 
 st.markdown("---")
-st.write(
-    f"🏠 **Wohnungs-Briefkasten-Analyse** © 2024 David Oesch, [Overture Maps Foundation](https://overturemaps.org), Overture  Release {release_date},  Anwendung Version: {gh_release} vom {gh_date}"
-)
-st.markdown(
-    "Mehr infos und :star: unter [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
-)
+st.write(f"{t['footer_text']} {release_date}, App Version: {gh_release}, {gh_date}")
+st.markdown(t["footer_link"])
