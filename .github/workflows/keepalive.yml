@@ -10,14 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Curl Streamlit App
-        id: curl
-        uses: indiesdev/curl@v1.1
-        with:
-          url: 'https://wieviele-briefkaesten-gibt-es.streamlit.app/'
-          method: 'GET'
-          accept: 200,302,307  # Accept these status codes
-          timeout: 10000
-          max-redirects: 10 
+        run: |
+              curl -L -o /dev/null -s -w "%{http_code}\n" https://wieviele-briefkaesten-gibt-es.streamlit.app/
       
       - name: Check Curl Result
         run: |
