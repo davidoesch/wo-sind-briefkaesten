@@ -3,6 +3,7 @@ name: Wake Up Streamlit Apps
 on:
   schedule:
     - cron: '0 8-20/2 * * *'  # Runs every 2 hours from 8 AM to 8 PM
+  workflow_dispatch:  # Allows manual triggering
 jobs:
   wake-up:
     runs-on: ubuntu-latest
