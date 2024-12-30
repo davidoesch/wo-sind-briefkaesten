@@ -16,6 +16,7 @@ jobs:
           url: 'https://wieviele-briefkaesten-gibt-es.streamlit.app/'
           method: 'GET'
           accept: 200,302,307  # Accept these status codes
+          timeout: 10000
       
       - name: Check Curl Result
         run: |
