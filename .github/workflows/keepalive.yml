@@ -1,18 +1,34 @@
-name: Keep Streamlit App Alive
+name: Wake Up Streamlit Apps
 
 on:
+  push:
+    branches:
+      - main
   schedule:
-    - cron: '0 8-20/2 * * *'  # Runs every 2 hours from 8 AM to 8 PM
-  workflow_dispatch:  # Allows manual triggering
+    - cron: "0 0 * * *"
 
 jobs:
-  ping:
+  wake-up:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Curl Streamlit App
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
         run: |
-              curl -L -o /dev/null -s -w "%{http_code}\n" https://wieviele-briefkaesten-gibt-es.streamlit.app/
-      
-      - name: Check Curl Result
-        run: |
-          echo "Response status: ${{ steps.curl.outputs.response }}"
+          pip install selenium
+
+      - name: Run Python script to wake up Streamlit apps
+        run: python wake_up_streamlit.py
+
+      - name: Upload log file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wakeup-log
+          path: wakeup_log.txt
