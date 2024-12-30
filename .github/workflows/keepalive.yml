@@ -1,12 +1,8 @@
 name: Wake Up Streamlit Apps
 
 on:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: "0 0 * * *"
-
+    - cron: '0 8-20/2 * * *'  # Runs every 2 hours from 8 AM to 8 PM
 jobs:
   wake-up:
     runs-on: ubuntu-latest
