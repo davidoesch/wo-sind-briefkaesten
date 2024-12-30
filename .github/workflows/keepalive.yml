@@ -1,0 +1,22 @@
+name: Keep Streamlit App Alive
+
+on:
+  schedule:
+    - cron: '0 8-20/2 * * *'  # Runs every 2 hours from 8 AM to 8 PM
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl Streamlit App
+        id: curl
+        uses: indiesdev/curl@v1.1
+        with:
+          url: 'https://wieviele-briefkaesten-gibt-es.streamlit.app/'
+          method: 'GET'
+          accept: 200,302,307  # Accept these status codes
+      
+      - name: Check Curl Result
+        run: |
+          echo "Response status: ${{ steps.curl.outputs.response }}"
