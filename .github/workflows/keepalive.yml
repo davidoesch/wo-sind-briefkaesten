@@ -17,6 +17,7 @@ jobs:
           method: 'GET'
           accept: 200,302,307  # Accept these status codes
           timeout: 10000
+          max-redirects: 10 
       
       - name: Check Curl Result
         run: |
