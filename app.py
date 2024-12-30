@@ -544,8 +544,13 @@ t = translations[lang]
 st.title(t["title"])
 st.markdown(t["description"])
 
+# Create a placeholder for the map
+map_placeholder = st.empty()
+
+# Create the map and display it in the placeholder
 m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
-output = st_folium(m, width=700, height=500)
+with map_placeholder:
+    output = st_folium(m, width=700, height=500)
 
 if st.button(t["button_calculate"]):
     if output["last_active_drawing"]:
