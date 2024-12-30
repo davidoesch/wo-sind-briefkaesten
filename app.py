@@ -513,6 +513,10 @@ st.set_page_config(
     layout="centered"              # Optional: Use "centered" or "wide" layouts
     #initial_sidebar_state="expanded"  # Optional: Expand or collapse the sidebar
 )
+# Initialize session state for language selection
+if 'selected_lang_index' not in st.session_state:
+    st.session_state.selected_lang_index = 0  # Default to DE
+
 #language selection
 option_map = {
     0: "DE",
@@ -529,6 +533,8 @@ selected_lang_index = st.pills(
     format_func=lambda option: option_map[option],
     label="Select Language",
     help="Select the language for the application.",
+    key='selected_lang_index'  # Use session state key
+
 )
 
 # Fallback to default if no selection (edge case)
