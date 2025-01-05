@@ -24,7 +24,7 @@ import streamlit as st
 import requests
 import geopandas as gpd
 import xml.etree.ElementTree as ET
-from shapely.geometry import Polygon, box
+from shapely.geometry import Polygon, box,MultiPolygon
 from shapely.ops import split
 from collections import defaultdict
 import json
@@ -208,7 +208,7 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
     """Sendet eine Anfrage an die GeoAdmin API mit einem gegebenen Polygon.
 
     Args:
-        polygon (shapely.geometry.Polygon): Das Polygon für die Anfrage.
+        polygon (shapely.geometry.Polygon or shapely.geometry.MultiPolygon): Das Polygon für die Anfrage.
         sr (int, optional): Raumbezugssystem (Spatial Reference). Standard: 4326 (WGS84).
 
     Returns:
@@ -216,7 +216,16 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
     """
     endpoint = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
 
-    polygon_coords = [[x, y] for x, y in polygon.exterior.coords]
+    # Handle both Polygon and MultiPolygon
+    if isinstance(polygon, Polygon):
+        polygon_coords = [[x, y] for x, y in polygon.exterior.coords]
+    elif isinstance(polygon, MultiPolygon):
+        polygon_coords = []
+        for poly in polygon:
+            polygon_coords.extend([[x, y] for x, y in poly.exterior.coords])
+    else:
+        raise ValueError("Unsupported geometry type")
+
     polygon_geometry = {
         "rings": [polygon_coords],
         "spatialReference": {"wkid": sr}
@@ -233,20 +242,11 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
         "returnGeometry": False
     }
 
-
-
     try:
-        print(f"call api.geo.admin.ch ... ")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
         }
-
-        #prox=QuickProxy()
-        #print(prox)
-        #response = requests.get(endpoint, params=params, headers=headers,proxies = {prox[0]:prox[1]}, timeout=15)
-        response = requests.get(endpoint, params=params, timeout=15)
-
-        print(f" ... responded ")
+        response = requests.get(endpoint, params=params, headers=headers, timeout=15)
         if response.status_code == 200:
             return response.json()
         else:
