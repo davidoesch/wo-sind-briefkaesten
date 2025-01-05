@@ -308,7 +308,25 @@ def load_kml_polygon_directly(kml_url):
     return Polygon(coords)
 
 def split_polygon(polygon, max_area, export_gpkg=False, gpkg_path="grid_output.gpkg"):
-    """Teilt ein Polygon in kleinere Polygone auf, deren Fläche max_area nicht überschreitet. Optionaler Export als GeoPackage."""
+    """Teilt ein Polygon in kleinere Polygone, deren Fläche eine vorgegebene Maximalgröße nicht überschreitet.
+
+    Args:
+        polygon (shapely.geometry.Polygon): Das zu teilende Polygon.
+        max_area (float): Maximale Fläche eines Teilpolygons.
+        export_gpkg (bool, optional): Gibt an, ob die Teilpolygone als GeoPackage exportiert werden sollen. Standard: False.
+        gpkg_path (str, optional): Pfad zur Ausgabe des GeoPackages. Standard: "grid_output.gpkg".
+
+    Returns:
+        list: Liste der generierten Teilpolygone.
+    """
+    # Check if the polygon is valid
+    if not polygon.is_valid:
+        print(f"Invalid polygon: {explain_validity(polygon)}")
+        # Attempt to fix the polygon
+        polygon = polygon.buffer(0)
+        if not polygon.is_valid:
+            raise ValueError("The input polygon is invalid and could not be fixed.")
+
     bounds = polygon.bounds  # (minx, miny, maxx, maxy)
     width = bounds[2] - bounds[0]
     height = bounds[3] - bounds[1]
@@ -342,10 +360,27 @@ def split_polygon(polygon, max_area, export_gpkg=False, gpkg_path="grid_output.g
     return sub_polygons
 
 def query_geoadmin_with_polygon(polygon, sr=4326):
-    """Sendet eine Anfrage an die GeoAdmin API mit einem Polygon."""
+    """Sendet eine Anfrage an die GeoAdmin API mit einem gegebenen Polygon.
+
+    Args:
+        polygon (shapely.geometry.Polygon or shapely.geometry.MultiPolygon): Das Polygon für die Anfrage.
+        sr (int, optional): Raumbezugssystem (Spatial Reference). Standard: 4326 (WGS84).
+
+    Returns:
+        dict: Das Antwort-JSON der API.
+    """
     endpoint = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
 
-    polygon_coords = [[x, y] for x, y in polygon.exterior.coords]
+    # Handle both Polygon and MultiPolygon
+    if isinstance(polygon, Polygon):
+        polygon_coords = [[x, y] for x, y in polygon.exterior.coords]
+    elif isinstance(polygon, MultiPolygon):
+        polygon_coords = []
+        for poly in polygon.geoms:
+            polygon_coords.extend([[x, y] for x, y in poly.exterior.coords])
+    else:
+        raise ValueError("Unsupported geometry type")
+
     polygon_geometry = {
         "rings": [polygon_coords],
         "spatialReference": {"wkid": sr}
@@ -362,20 +397,11 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
         "returnGeometry": False
     }
 
-
-
     try:
-        print(f"call api.geo.admin.ch ... ")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
         }
-
-        prox=QuickProxy()
-        #print(prox)
-        #response = requests.get(endpoint, params=params, headers=headers,proxies = {prox[0]:prox[1]}, timeout=15)
-        response = requests.get(endpoint, params=params, timeout=15)
-
-        print(f" ... responded ")
+        response = requests.get(endpoint, params=params, headers=headers, timeout=15)
         if response.status_code == 200:
             return response.json()
         else:
