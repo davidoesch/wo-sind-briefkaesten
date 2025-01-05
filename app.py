@@ -556,7 +556,7 @@ map_placeholder = st.empty()
 # Create the map and display it in the placeholder
 with map_placeholder.container():
     m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
-    output = st_folium(m, width='100%', height=500)
+    output = st_folium(m, width=700,height=500)
 
 # Add a spacer to ensure the button is not too close to the map
 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
