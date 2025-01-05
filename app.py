@@ -26,6 +26,7 @@ import geopandas as gpd
 import xml.etree.ElementTree as ET
 from shapely.geometry import Polygon, box,MultiPolygon
 from shapely.ops import split
+from shapely.validation import explain_validity
 from collections import defaultdict
 import json
 import numpy as np
@@ -172,6 +173,14 @@ def split_polygon(polygon, max_area, export_gpkg=False, gpkg_path="grid_output.g
     Returns:
         list: Liste der generierten Teilpolygone.
     """
+    # Check if the polygon is valid
+    if not polygon.is_valid:
+        print(f"Invalid polygon: {explain_validity(polygon)}")
+        # Attempt to fix the polygon
+        polygon = polygon.buffer(0)
+        if not polygon.is_valid:
+            raise ValueError("The input polygon is invalid and could not be fixed.")
+
     bounds = polygon.bounds  # (minx, miny, maxx, maxy)
     width = bounds[2] - bounds[0]
     height = bounds[3] - bounds[1]
