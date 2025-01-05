@@ -230,7 +230,7 @@ def query_geoadmin_with_polygon(polygon, sr=4326):
         polygon_coords = [[x, y] for x, y in polygon.exterior.coords]
     elif isinstance(polygon, MultiPolygon):
         polygon_coords = []
-        for poly in polygon:
+        for poly in polygon.geoms:
             polygon_coords.extend([[x, y] for x, y in poly.exterior.coords])
     else:
         raise ValueError("Unsupported geometry type")
