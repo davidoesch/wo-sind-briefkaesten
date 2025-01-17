@@ -504,14 +504,7 @@ def extract_overture(polygon):        # Initial setup
 
 # Hauptprogramm
 
-# Add this at the beginning of your script, after the imports
-if 'initialized' not in st.session_state:
-    st.session_state.initialized = False
-
-# Modify your map creation section
-if not st.session_state.initialized:
-    st.session_state.initialized = True
-    st.rerun()
+# Set the page title and icon
 
 # Streamlit app
 release_date = "-"
@@ -532,6 +525,21 @@ st.set_page_config(
     layout="centered"              # Optional: Use "centered" or "wide" layouts
     #initial_sidebar_state="expanded"  # Optional: Expand or collapse the sidebar
 )
+
+st.markdown("""
+    <style>
+        .element-container:has([data-testid="stImage"]) {
+            margin-bottom: -30px;
+        }
+        iframe {
+            margin-bottom: -50px;
+        }
+        .stButton {
+            margin-top: -20px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Initialize session state for language selection
 if 'selected_lang_index' not in st.session_state:
     st.session_state.selected_lang_index = 0  # Default to DE
@@ -576,6 +584,8 @@ st.markdown(t["description"])
 m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
 output = st_folium(m, width=700)
 
+# Add a small vertical space if needed
+st.markdown("<div style='margin-top: -30px;'></div>", unsafe_allow_html=True)
 
 if st.button(t["button_calculate"]):
     if output["last_active_drawing"]:
