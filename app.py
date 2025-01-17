@@ -504,7 +504,14 @@ def extract_overture(polygon):        # Initial setup
 
 # Hauptprogramm
 
+# Add this at the beginning of your script, after the imports
+if 'initialized' not in st.session_state:
+    st.session_state.initialized = False
 
+# Modify your map creation section
+if not st.session_state.initialized:
+    st.session_state.initialized = True
+    st.rerun()
 
 # Streamlit app
 release_date = "-"
