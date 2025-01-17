@@ -504,14 +504,8 @@ def extract_overture(polygon):        # Initial setup
 
 # Hauptprogramm
 
-# Check if the page has been loaded before
-if 'page_loaded' not in st.session_state:
-    st.session_state.page_loaded = False
 
-# If the page hasn't been loaded before, reload the page
-if not st.session_state.page_loaded:
-    st.session_state.page_loaded = True
-    st.experimental_rerun()
+
 # Streamlit app
 release_date = "-"
 gh_release= "-"
