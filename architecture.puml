@@ -12,6 +12,7 @@ System_Boundary(app, "Application") {
     Container(webApp, "Streamlit Web Application", "Python/Streamlit", "Provides a user interface for data interaction and visualization.") {
         Component(app_py, "app.py", "Streamlit", "Main application logic and user interface.")
         Component(trans_py, "trans.py", "Python", "Handles translations for multilingual support.")
+        Component(overture_py, "overture.py", "Python", "Fetches and processes data from Overture Maps.")
     }
     Container(api, "API Layer", "Python", "Handles data processing and external API interactions.") {
         Component(madd_extract_py, "madd_extract.py", "Python", "Extracts and processes data from external sources.")
