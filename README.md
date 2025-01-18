@@ -105,17 +105,22 @@ The project consists of three main files:
 ## Usage
 ### Local execution
 1. Clone the repository:
-  ```bash
-  git clone https://github.com/davidoesch/wo-sind-briefkaesten.git
-  ```
+
+```bash
+git clone https://github.com/davidoesch/wo-sind-briefkaesten.git
+```
+
 2. Change to the directory:
-  ```bash
-  cd wo-sind-briefkaesten
-  ```
+
+```bash
+cd wo-sind-briefkaesten
+```
+
 3. Start the Streamlit application:
-  ```bash
-  uv run streamlit run app.py
-  ```
+
+```bash
+uv run streamlit run app.py
+```
 
 ### Interactive use
 
