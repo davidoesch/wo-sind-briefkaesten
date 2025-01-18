@@ -1,0 +1,35 @@
+@startuml C4_Architecture
+
+!include  https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title C4 Model - Container Diagram
+
+Person(user, "User", "Interacts with the application via a web interface.")
+
+System_Boundary(app, "Application") {
+    Container(webApp, "Streamlit Web Application", "Python/Streamlit", "Provides a user interface for data interaction and visualization.") {
+        Component(app_py, "app.py", "Streamlit", "Main application logic and user interface.")
+        Component(trans_py, "trans.py", "Python", "Handles translations for multilingual support.")
+    }
+    Container(api, "API Layer", "Python", "Handles data processing and external API interactions.") {
+        Component(madd_extract_py, "madd_extract.py", "Python", "Extracts and processes data from external sources.")
+    }
+    Container(wakeUpService, "Wake Up Service", "Python/Selenium", "Keeps the Streamlit app alive.") {
+        Component(wake_up_streamlit_py, "wake_up_streamlit.py", "Python", "Automates the wake-up process for the Streamlit app.")
+    }
+    ContainerDb(database, "Data Storage", "DuckDB", "Stores application data and user information.")
+}
+
+System_Ext(geoAdminAPI, "GeoAdmin API", "Provides geospatial data for processing.")
+System_Ext(overtureMaps, "Overture Maps", "Provides map data for processing.")
+
+Rel(user, webApp, "Uses", "HTTP")
+Rel(webApp, api, "Sends requests to", "HTTP")
+Rel(api, database, "Reads from and writes to", "SQL")
+Rel(api, geoAdminAPI, "Fetches data from", "HTTP")
+Rel(api, overtureMaps, "Fetches data from", "HTTP")
+Rel(wakeUpService, webApp, "Keeps alive", "Automated")
+
+@enduml
