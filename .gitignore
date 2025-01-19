@@ -167,3 +167,4 @@ secrets/
 results/
 rclone/
 grid_output.*
+.aider*
