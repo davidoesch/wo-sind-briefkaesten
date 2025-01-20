@@ -577,6 +577,7 @@ t = translations[lang]
 st.title(t["title"])
 st.markdown(t["description"])
 
+
 # Create a placeholder for the map
 #map_placeholder = st.empty()
 

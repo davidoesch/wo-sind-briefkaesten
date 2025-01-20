@@ -7,7 +7,7 @@ translations = {
 Hier können Sie schnell und einfach die Anzahl der Zulieferadressen / Briefkästen in einem Gebiet abschätzen.
 Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten für Sie:
 1. **Zeichnen Sie ein Gebiet auf der Karte ein (max 10km2).**
-2. **Klicken Sie auf *Berechnen*. (Wenn Button nicht sichtbar: <a href="javascript:location.reload()">Seite neu laden</a>)**
+2. **Klicken Sie auf *Berechnen*. (Wenn Button nicht sichtbar: Seite neu laden)**
 3. **Erhalten Sie die Anzahl der Zustelladressen.**
         """,
 
@@ -44,7 +44,7 @@ Zeichnen Sie einfach ein Polygon auf der Karte, und wir analysieren die Daten f�
 Vous pouvez rapidement estimer le nombre de boîtes aux lettres dans une zone. Dessinez simplement un polygone sur la carte, et nous analysons les données pour vous :
 
 1. **Dessinez une zone sur la carte (max 10km2).**
-2. **Cliquez sur *Calculer*.**
+2. **Cliquez sur *Calculer*. (Si le bouton n'est pas visible : recharger la page)**
 3. **Obtenez le nombre d'adresses de livraison.**
         """,
         "button_calculate": "Calculer",
@@ -80,7 +80,7 @@ Vous pouvez rapidement estimer le nombre de boîtes aux lettres dans une zone. D
 Puoi stimare rapidamente il numero di cassette postali in un'area. Disegna semplicemente un poligono sulla mappa e analizzeremo i dati per te:
 
 1. **Disegna un'area sulla mappa (max 10km2).**
-2. **Fai clic su *Calcola*.**
+2. **Fai clic su *Calcola*.(Se il pulsante non è visibile: ricaricare la pagina)**
 3. **Ottieni il numero di indirizzi di consegna.**
         """,
         "button_calculate": "Calcola",
@@ -116,7 +116,7 @@ Puoi stimare rapidamente il numero di cassette postali in un'area. Disegna sempl
 You can quickly estimate the number of mailboxes in an area. Simply draw a polygon on the map, and we'll analyze the data for you:
 
 1. **Draw an area on the map (max 10km2).**
-2. **Click on *Calculate*.**
+2. **Click on *Calculate*.(If button is not visible: reload page)**
 3. **Get the number of delivery addresses.**
         """,
         "button_calculate": "Calculate",
