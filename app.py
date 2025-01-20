@@ -585,6 +585,7 @@ st.markdown(t["description"])
 m = create_map(center=[46.8182, 8.2275], zoom=8)  # Centered on Switzerland
 output = st_folium(m, width=700)
 
+
 # Add a small vertical space if needed
 st.markdown("<div style='margin-top: -30px;'></div>", unsafe_allow_html=True)
 

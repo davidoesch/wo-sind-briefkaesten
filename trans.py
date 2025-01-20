@@ -109,7 +109,7 @@ Puoi stimare rapidamente il numero di cassette postali in un'area. Disegna sempl
         "footer_link": "Maggiori informazioni e :star: su [github.com/davidoesch/wo-sind-briefkaesten](https://github.com/davidoesch/wo-sind-briefkaesten)"
     },
     "EN": {
-        "page_title": "Mailboxes",
+        "page_title": "Mailbox",
         "page_icon": "📮",
         "title": "How many mailboxes are there?",
         "description": """
