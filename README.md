@@ -142,7 +142,7 @@ website: [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.s
 [How many mailboxes are there?](https://wieviele-briefkaesten-gibt-es.streamlit.app)
 
 ## License
-© 2024 David Oesch. This project is licensed under the [MIT License](LICENSE.txt).
+© 2025 David Oesch. This project is licensed under the [MIT License](LICENSE.txt).
 
 ## Contact
 Do you have questions or suggestions for improvement? [David Oesch on GitHub](https://github.com/davidoesch).
