@@ -368,6 +368,32 @@ def create_map(center, zoom):
     ).add_to(m)
     return m
 
+def fetch_latest_overture_release():
+    """Fetch the latest Overture Maps release version."""
+    try:
+        # Query the release calendar page
+        response = requests.get("https://docs.overturemaps.org/release-calendar/")
+        html_content = response.text
+
+        # Look for the release date pattern (yyyy-mm-dd.x format)
+        match = re.search(r'latest Overture data release is <code>(\d{4}-\d{2}-\d{2}\.\d+)</code>', html_content)
+
+        if match:
+            release_date = match.group(1)
+            print(f"Overture release date: {release_date}")
+            return release_date
+        else:
+            # Fallback to a recent known version
+            fallback = "2025-09-24.0"
+            print(f"Release date not found, using fallback: {fallback}")
+            return fallback
+
+    except Exception as e:
+        print(f"Error fetching release info: {e}")
+        return "no-release found"  # Fallback
+
+
+
 def extract_overture(polygon):        # Initial setup
         """
         Extracts place names and addresses from Overture Maps data within a specified polygon.
@@ -411,16 +437,13 @@ def extract_overture(polygon):        # Initial setup
         html_content = response.text
 
         # Use regular expression to find the release date in the title
-        match = re.search(r'data-rh=true>(\d{4}-\d{2}-\d{2}\.\d+)', html_content)
-        if match:
-            release_date = match.group(1)
-            print("Overture release date: "+ release_date)
-        else:
-            print("Release date not found, taking 2024-12-18.0")
-            release_date = "2024-12-18.0"
+
+        release_date = fetch_latest_overture_release()
+
 
         # Construct the parquet path using the latest release date
         parquet_path = f"s3://overturemaps-us-west-2/release/{release_date}/theme=places/type=*/*"
+
 
 
         query = f"""
