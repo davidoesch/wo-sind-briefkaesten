@@ -38,6 +38,9 @@ import duckdb as db
 import ast
 import requests
 import re
+import boto3
+from botocore import UNSIGNED
+from botocore.config import Config
 from bs4 import BeautifulSoup
 from trans import translations
 
@@ -368,29 +371,59 @@ def create_map(center, zoom):
     ).add_to(m)
     return m
 
+import boto3
+from botocore import UNSIGNED
+from botocore.config import Config
+
 def fetch_latest_overture_release():
-    """Fetch the latest Overture Maps release version."""
+    """Fetch the latest Overture Maps release version from S3."""
     try:
-        # Query the release calendar page
-        response = requests.get("https://docs.overturemaps.org/release-calendar/")
-        html_content = response.text
+        # Create S3 client without credentials (public bucket)
+        s3 = boto3.client(
+            's3',
+            region_name='us-west-2',
+            config=Config(signature_version=UNSIGNED)
+        )
 
-        # Look for the release date pattern (yyyy-mm-dd.x format)
-        match = re.search(r'latest Overture data release is <code>(\d{4}-\d{2}-\d{2}\.\d+)</code>', html_content)
+        # List directories in the release folder
+        response = s3.list_objects_v2(
+            Bucket='overturemaps-us-west-2',
+            Prefix='release/',
+            Delimiter='/'
+        )
 
-        if match:
-            release_date = match.group(1)
-            print(f"Overture release date: {release_date}")
-            return release_date
+        # Extract release versions
+        releases = []
+        for prefix in response.get('CommonPrefixes', []):
+            release_name = prefix['Prefix'].replace('release/', '').rstrip('/')
+            # Filter out any non-release directories (like README files)
+            if re.match(r'\d{4}-\d{2}-\d{2}\.\d+', release_name):
+                releases.append(release_name)
+
+        if releases:
+            # Sort and get latest (date-based versions sort correctly alphabetically)
+            latest_release = sorted(releases)[-1]
+            print(f"Overture release date: {latest_release}")
+            return latest_release
         else:
             # Fallback to a recent known version
-            fallback = "2025-09-24.0"
-            print(f"Release date not found, using fallback: {fallback}")
+            fallback = "2026-01-21.0"
+            print(f"No releases found, using fallback: {fallback}")
             return fallback
 
     except Exception as e:
         print(f"Error fetching release info: {e}")
-        return "no-release found"  # Fallback
+        # Try fallback to HTML scraping as backup
+        try:
+            import requests
+            response = requests.get("https://docs.overturemaps.org/release-calendar/")
+            match = re.search(r'latest Overture data release is <code>(\d{4}-\d{2}-\d{2}\.\d+)</code>', response.text)
+            if match:
+                return match.group(1)
+        except:
+            pass
+        return "2026-01-21.0"  # Final fallback
+
 
 
 
