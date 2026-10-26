@@ -407,7 +407,7 @@ def fetch_latest_overture_release():
             return latest_release
         else:
             # Fallback to a recent known version
-            fallback = "2026-01-21.0"
+            fallback = "2026-10-21.0"
             print(f"No releases found, using fallback: {fallback}")
             return fallback
 
