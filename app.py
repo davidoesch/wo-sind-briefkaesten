@@ -483,8 +483,8 @@ def extract_overture(polygon):        # Initial setup
         SELECT
             id,
             names.primary AS primary_name,
-            json_extract_string(categories, 'primary') AS category,
-            json_extract_string(categories, 'alternate') AS category_alt,
+            taxonomy.primary AS category,
+            to_json(taxonomy.alternates) AS category_alt,
             addresses AS addresses,
             ST_AsText(geometry) as geometry
         FROM
@@ -500,10 +500,14 @@ def extract_overture(polygon):        # Initial setup
         con.close()
 
         # Extract place names and addresses
-        place_and_address_df = result_df[['primary_name', 'addresses','category','category_alt']].dropna()
+        # Nur Name und Adresse sind Pflicht; die meisten Orte haben keine Alternativ-Kategorie
+        place_and_address_df = result_df[['primary_name', 'addresses','category','category_alt']].dropna(subset=['primary_name', 'addresses'])
 
         # Apply the extract freeform function to the 'addresses' column
         place_and_address_df['flattened_addresses'] = place_and_address_df['addresses'].apply(extract_freeform)
+
+        # Orte ohne Strassenadresse entfernen: meist Bahnhöfe, Plätze, Seen etc. ohne Briefkasten
+        place_and_address_df = place_and_address_df[place_and_address_df['flattened_addresses'].fillna('').str.strip() != '']
 
         # Drop the original 'addresses' column for cleaner output (optional)
         place_and_address_df = place_and_address_df.drop(columns=['addresses'])
