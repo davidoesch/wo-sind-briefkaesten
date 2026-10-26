@@ -477,7 +477,9 @@ def extract_overture(polygon):        # Initial setup
         # Construct the parquet path using the latest release date
         parquet_path = f"s3://overturemaps-us-west-2/release/{release_date}/theme=places/type=*/*"
 
-
+        # Bounding box des Polygons: Filter auf die bbox-Spalte lässt DuckDB alle Datenblöcke
+        # ausserhalb des Perimeters überspringen, statt den ganzen Datensatz zu laden
+        minx, miny, maxx, maxy = polygon.bounds
 
         query = f"""
         SELECT
@@ -490,7 +492,9 @@ def extract_overture(polygon):        # Initial setup
         FROM
             read_parquet('{parquet_path}', filename=true, hive_partitioning=1)
         WHERE
-            ST_Intersects(geometry, ST_GeomFromText('{polygon.wkt}'))
+            bbox.xmin <= {maxx} AND bbox.xmax >= {minx}
+            AND bbox.ymin <= {maxy} AND bbox.ymax >= {miny}
+            AND ST_Intersects(geometry, ST_GeomFromText('{polygon.wkt}'))
         """
 
 
